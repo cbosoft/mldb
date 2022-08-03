@@ -1,4 +1,5 @@
 from sqlite3 import connect
+import os
 
 from .config import CONFIG
 
@@ -7,6 +8,7 @@ class Database:
 
     def __init__(self):
         self.path = CONFIG.db_path
+        self.dir_path = os.path.dirname(self.path)
         self.conn = connect(self.path)
         self.cursor = self.conn.cursor()
         self.ensure_schema()
@@ -62,10 +64,12 @@ class Database:
         self.conn.commit()
 
     def set_config_file(self, exp_id, config_file_path: str):
-        self.cursor.execute('INSERT INTO CONFIG (EXPID, CONFIG);', (exp_id, config_file_path))
+        config_file_path = os.path.relpath(config_file_path, self.dir_path)
+        self.cursor.execute('INSERT INTO CONFIG (EXPID, CONFIG) VALUES (?, ?);', (exp_id, config_file_path))
         self.conn.commit()
 
     def add_state_file(self, exp_id: str, epoch: int, path: str):
+        path = os.path.relpath(path, self.dir_path)
         self.cursor.execute(
             'INSERT INTO STATE (EXPID, EPOCH, PATH) VALUES (?, ?, ?);', (exp_id, epoch, path)
         )
