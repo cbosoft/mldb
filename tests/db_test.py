@@ -7,20 +7,32 @@ from mldb.database import Database
 def test_db():
     CONFIG.db_path = 'test.db'
 
-    os.remove(CONFIG.db_path)
+    if os.path.isfile(CONFIG.db_path):
+        os.remove(CONFIG.db_path)
 
     with Database() as db:
-        db.cursor.execute('INSERT INTO STATUS (EXPID, STATUS) VALUES (?, ?)', ('TEST_1', 'COMPLETE'))
-        db.cursor.execute('INSERT INTO STATUS (EXPID, STATUS) VALUES (?, ?)', ('TEST_2', 'COMPLETE'))
-        db.cursor.execute('INSERT INTO STATUS (EXPID, STATUS) VALUES (?, ?)', ('TEST_3', 'TRAINING'))
+        db.set_exp_status('TEST_1', 'TRAINING')
+        db.add_metric_value('TEST_1', 'RMSE', 1, 1.0)
+        db.set_exp_status('TEST_1', 'COMPLETE')
+        db.add_metric_value('TEST_1', 'RMSE', 2, 0.5)
 
-        db.cursor.execute('INSERT INTO METRIC_RMSE_VALID (EXPID, VALUE) VALUES (?, ?)', ('TEST_1', 0.5))
-        db.cursor.execute('INSERT INTO METRIC_RMSE_VALID (EXPID, VALUE) VALUES (?, ?)', ('TEST_2', 0.25))
-        db.cursor.execute('INSERT INTO METRIC_RMSE_VALID (EXPID, VALUE) VALUES (?, ?)', ('TEST_3', 0.1))
+        db.add_metric_value('TEST_2', 'RMSE', 1, 0.5)
+        db.set_exp_status('TEST_2', 'TRAINING')
+        db.add_metric_value('TEST_2', 'RMSE', 2, 0.25)
+        db.set_exp_status('TEST_2', 'COMPLETE')
+
+        db.add_metric_value('TEST_3', 'RMSE', 1, 0.25)
+        db.set_exp_status('TEST_3', 'TRAINING')
+        db.add_metric_value('TEST_3', 'RMSE', 2, 0.125)
 
         db.conn.commit()
 
-        db.cursor.execute('SELECT STATUS.EXPID FROM STATUS INNER JOIN METRIC_RMSE_VALID ON STATUS.EXPID=METRIC_RMSE_VALID.EXPID WHERE STATUS.STATUS="COMPLETE" ORDER BY METRIC_RMSE_VALID.VALUE ASC LIMIT 1;')
+        db.cursor.execute(
+            'SELECT STATUS.EXPID FROM \
+            STATUS INNER JOIN METRICS ON STATUS.EXPID=METRICS.EXPID \
+            WHERE STATUS.STATUS="COMPLETE" AND METRICS.KIND="RMSE" \
+            ORDER BY METRICS.VALUE ASC LIMIT 1;')
+
         rows = db.cursor.fetchall()
         assert len(rows) == 1
         assert rows[0][0] == 'TEST_2'

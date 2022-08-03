@@ -27,3 +27,25 @@ with Database() as db:
     db.cursor.execute('SELECT EXP_ID FROM STATUS WHERE STATUS.STATUS="COMPLETE";')
     print(db.cursor.fetchall())
 ```
+
+Instead of figuring out the SQL, it's likely you want to use the wrapper functions:
+```python
+from datetime import datetime
+from mldb import Database
+
+# Generate experiment name
+# e.g. "20220803_091702_TestModel"
+expname = datetime.now().strftime('%Y%m%d_%H%M%S_TestModel')
+
+with Database() as db:
+    db.set_exp_status(expname, 'TRAINING')
+    
+    for epoch in range(100):
+        # do training...
+        ...
+        db.add_loss_value(expname, 'train', epoch, average_epoch_training_loss)
+        # do validation
+        ...
+        db.add_loss_value(expname, 'valid', epoch, average_epoch_valid_loss)
+        db.add_metric_value(expname, 'rmse', epoch, rmse)
+```
