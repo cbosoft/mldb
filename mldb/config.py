@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 
 
 class _Config:
@@ -10,9 +9,7 @@ class _Config:
 
     @classmethod
     def load(cls):
-        config_name = 'mldb_config.json'
-        if sys.platform != 'Windows':
-            config_name = '.' + config_name
+        config_name = '.mldb_config.json'
 
         config_path = os.path.join(os.getenv('HOME'), config_name)
 
