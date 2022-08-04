@@ -74,3 +74,19 @@ class Database:
             'INSERT INTO STATE (EXPID, EPOCH, PATH) VALUES (?, ?, ?);', (exp_id, epoch, path)
         )
         self.conn.commit()
+
+    def get_state_file(self, exp_id: str, epoch: int) -> str:
+        self.cursor.execute(
+            'SELECT PATH FROM STATE WHERE EXPID=? AND EPOCH=?;', (exp_id, epoch)
+        )
+        results = self.cursor.fetchall()
+        n_results = len(results)
+        assert n_results < 2, f'Too many results returned! (expected 1, got {n_results})'
+        assert n_results > 0, f'Too few results returned! (expected 1, got {n_results})'
+
+        state_file = results[0][0]
+        # State file path is relative to the db location, make it absolute.
+        return os.path.join(
+            self.dir_path,
+            state_file
+        )
