@@ -32,6 +32,10 @@ class Database:
             'CREATE TABLE IF NOT EXISTS \
             "STATE" ("EXPID" TEXT NOT NULL, "EPOCH" INTEGER NOT NULL, "PATH" TEXT NOT NULL,\
             UNIQUE(EXPID, EPOCH, PATH));',
+
+            'CREATE TABLE IF NOT EXISTS \
+            "HYPERPARAMS" ("EXPID" TEXT NOT NULL, "NAME" TEXT NOT NULL, "VALUE" TEXT NOT NULL,\
+            UNIQUE(EXPID, NAME));',
         ]
         for command in commands:
             self.cursor.execute(command)
@@ -54,6 +58,12 @@ class Database:
         self.cursor.execute(
             'INSERT INTO LOSS (EXPID, KIND, EPOCH, VALUE) VALUES (?, ?, ?, ?)',
             (exp_id, kind, epoch, value))
+        self.conn.commit()
+
+    def add_hyperparam(self, exp_id: str, name: str, value: str):
+        self.cursor.execute(
+            'INSERT INTO HYPERPARAMS (EXPID, NAME, VALUE) VALUES (?, ?, ?)',
+            (exp_id, name, value))
         self.conn.commit()
 
     def add_metric_value(self, exp_id: str, kind: str, epoch: int, value: float):
