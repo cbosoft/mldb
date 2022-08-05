@@ -68,12 +68,16 @@ class Database:
         self.cursor.execute('INSERT INTO CONFIG (EXPID, CONFIG) VALUES (?, ?);', (exp_id, config_file_path))
         self.conn.commit()
 
-    def add_state_file(self, exp_id: str, epoch: int, path: str):
+    def add_state_file(self, exp_id: str, epoch: int, path: str, error_on_collision=True):
         path = os.path.relpath(path, self.dir_path)
-        self.cursor.execute(
-            'INSERT INTO STATE (EXPID, EPOCH, PATH) VALUES (?, ?, ?);', (exp_id, epoch, path)
-        )
-        self.conn.commit()
+        try:
+            self.cursor.execute(
+                'INSERT INTO STATE (EXPID, EPOCH, PATH) VALUES (?, ?, ?);', (exp_id, epoch, path)
+            )
+            self.conn.commit()
+        except Exception as e:
+            if error_on_collision:
+                raise e
 
     def get_state_file(self, exp_id: str, epoch: int) -> str:
         self.cursor.execute(
