@@ -2,11 +2,11 @@ from ..config import CONFIG
 
 from .base import BaseDatabase
 from .sqlite_backend import SQLiteDatabase
-from .postgresql_backend import PostGreSQLDatabase
+from .postgresql_backend import PostgreSQLDatabase
 
 BACKEND_REGISTRY = dict(
     sqlite=SQLiteDatabase,
-    postgresql=PostGreSQLDatabase
+    postgresql=PostgreSQLDatabase
 )
 
 

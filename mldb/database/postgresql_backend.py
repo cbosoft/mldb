@@ -1,12 +1,12 @@
-from ..config import CONFIG, PostGreSQLConfig
+from ..config import CONFIG, PostgreSQLConfig
 from .sqlite_backend import SQLiteDatabase
 
 from psycopg2 import connect
 
-CONFIG: PostGreSQLConfig
+CONFIG: PostgreSQLConfig
 
 
-class PostGreSQLDatabase(SQLiteDatabase):
+class PostgreSQLDatabase(SQLiteDatabase):
 
     COMMAND_SET_STATUS = 'INSERT INTO STATUS (EXPID, STATUS) VALUES (%s, %s) ON CONFLICT (EXPID) DO UPDATE SET STATUS=excluded.STATUS;'
     COMMAND_ADD_LOSS = 'INSERT INTO LOSS (EXPID, KIND, EPOCH, VALUE) VALUES (%s, %s, %s, %s)'

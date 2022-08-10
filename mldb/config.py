@@ -13,7 +13,7 @@ class SQLiteConfig:
         return dict(db_path=self.db_path)
 
 
-class PostGreSQLConfig:
+class PostgreSQLConfig:
 
     backend = 'postgresql'
 
@@ -51,7 +51,7 @@ class _Config:
             config = SQLiteConfig(**kwargs['sqlite'])
         elif backend == 'postgresql':
             assert 'postgresql' in kwargs
-            config = PostGreSQLConfig(**kwargs['postgresql'])
+            config = PostgreSQLConfig(**kwargs['postgresql'])
         else:
             raise ValueError(f'Unknown backend {backend}')
         return config
