@@ -21,6 +21,9 @@ class Database(BaseDatabase):
     (SQLiteDatabase, PostGreSQLDatabase, etc). They are written here to appease the almightly linter.
     """
 
+    def __repr__(self):
+        ...
+
     def connect(self):
         ...
 

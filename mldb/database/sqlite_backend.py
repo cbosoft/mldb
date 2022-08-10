@@ -24,6 +24,9 @@ class SQLiteDatabase(BaseDatabase):
         self.connect()
         self.ensure_schema()
 
+    def __repr__(self):
+        return f'SQLite://{CONFIG.db_path}'
+
     def connect(self):
         self.conn = connect(CONFIG.db_path)
         self.cursor = self.conn.cursor()

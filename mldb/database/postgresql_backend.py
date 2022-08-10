@@ -19,6 +19,13 @@ class PostGreSQLDatabase(SQLiteDatabase):
     def __init__(self):
         super().__init__(CONFIG.root_dir)
 
+        self.host = CONFIG.host
+        self.user = CONFIG.user
+        self.port = CONFIG.port
+
     def connect(self):
         self.conn = connect(**CONFIG.as_dict())
         self.cursor = self.conn.cursor()
+
+    def __repr__(self):
+        return f'PostgreSQL://{self.user}@{self.host}:{self.port}'

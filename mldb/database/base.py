@@ -12,6 +12,9 @@ class BaseDatabase:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def __repr__(self):
+        raise NotImplementedError
+
     def connect(self):
         raise NotImplementedError
 
