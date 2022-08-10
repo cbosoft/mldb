@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='mldb',
@@ -6,7 +6,7 @@ setup(
     description='ML Experiment tracker database facilitation',
     author='Chris Boyle',
     author_email='chris@cmjb.tech',
-    packages=['mldb'],
+    packages=find_packages(),
     install_requires=['wheel'],
     requires=['numpy', 'matplotlib', 'psycopg2'],
     extras_require=dict(
