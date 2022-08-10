@@ -6,6 +6,7 @@ from mldb.database import Database
 
 def test_db():
     CONFIG.db_path = 'test.db'
+    CONFIG.database = 'Test'
 
     if os.path.isfile(CONFIG.db_path):
         os.remove(CONFIG.db_path)
@@ -30,9 +31,12 @@ def test_db():
         db.cursor.execute(
             'SELECT STATUS.EXPID FROM \
             STATUS INNER JOIN METRICS ON STATUS.EXPID=METRICS.EXPID \
-            WHERE STATUS.STATUS="COMPLETE" AND METRICS.KIND="RMSE" \
+            WHERE STATUS.STATUS=\'COMPLETE\' AND METRICS.KIND=\'RMSE\' \
             ORDER BY METRICS.VALUE ASC LIMIT 1;')
 
         rows = db.cursor.fetchall()
         assert len(rows) == 1
         assert rows[0][0] == 'TEST_2'
+
+        db.cursor.execute('drop table metrics;')
+        db.conn.commit()

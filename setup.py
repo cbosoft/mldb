@@ -8,7 +8,7 @@ setup(
     author_email='chris@cmjb.tech',
     packages=['mldb'],
     install_requires=['wheel'],
-    requires=['numpy', 'matplotlib'],
+    requires=['numpy', 'matplotlib', 'psycopg2'],
     extras_require=dict(
         test='pytest'
     )
