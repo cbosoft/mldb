@@ -1,0 +1,85 @@
+* {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/*div.container {*/
+/*    !* top left bottom right *!*/
+/*}*/
+div.content {
+    margin-left: 200px;
+    margin-right: 20px;
+    font-size: 24px;
+    /*width: 80%;*/
+    /*top: 0;*/
+    /*overflow: scroll;*/
+}
+div.sidebar {
+    height: 100vh;
+    width: 160px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 20px;
+    /*border: 1em solid lightblue;*/
+    background-color: steelblue;
+}
+
+div.sidebar-contents {
+    padding: 8px;
+    font-size: 24px;
+    display: block;
+}
+
+* .sidebar-contents {
+    color: white;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/*.container div {*/
+/*    height: 80vh;*/
+/*    overflow: scroll;*/
+/*}*/
+
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+a:hover, td.clickable:hover {
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+tr:nth-child(even){background-color: #f2f2f2;}
+
+tr:hover {background-color: #ddd;}
+
+th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: steelblue;
+  color: white;
+}
+
+
+/* ----------------------------------------------------------- */
+.subcontainer {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.subitem {
+    /*flex:*/
+}
