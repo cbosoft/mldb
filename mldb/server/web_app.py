@@ -160,7 +160,7 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
 
         # If is still training, refresh data every 30 seconds
         if 'status' in details:
-            if details['status'] == 'training':
+            if details['status'] == 'TRAINING':
                 result['refresh'] = dict(
                     query=dict(
                         show='details',
