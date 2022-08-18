@@ -36,6 +36,9 @@ class BaseDatabase:
     def add_hyperparam(self, exp_id: str, name: str, value: str):
         raise NotImplementedError
 
+    def get_hyperparams(self, exp_id: str) -> dict:
+        raise NotImplementedError
+
     def add_metric_value(self, exp_id: str, kind: str, epoch: int, value: float):
         raise NotImplementedError
 
@@ -46,4 +49,7 @@ class BaseDatabase:
         raise NotImplementedError
 
     def get_state_file(self, exp_id: str, epoch: int) -> str:
+        raise NotImplementedError
+
+    def get_experiment_details(self, exp_id) -> dict:
         raise NotImplementedError

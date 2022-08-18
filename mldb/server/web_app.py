@@ -118,6 +118,29 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
         )
         return result
 
+    def get_experiment_details(self, expid) -> dict:
+        details = self.db.get_experiment_details(expid)
+        if 'error' in details:
+            return details
+
+        params = self.db.get_hyperparams(expid)
+        if 'error' in params:
+            return params
+
+        # TODO: config (dataset, most importantly)
+        # config = self.db.get_config(expid)
+        # if 'error' in config:
+        #     return config
+
+        result = dict(
+            title=f'Experiment Details ({expid})',
+            kind='details',
+            details=details,
+            params=params,
+            # config=config,
+        )
+        return result
+
 
 def run_server(hostname: str, port: int):
     os.chdir(SERVER_SOURCE_DIR)

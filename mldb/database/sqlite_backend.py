@@ -11,8 +11,11 @@ CONFIG: SQLiteConfig
 class SQLiteDatabase(BaseDatabase):
 
     COMMAND_SET_STATUS = 'INSERT INTO STATUS (EXPID, STATUS) VALUES (?, ?) ON CONFLICT (EXPID) DO UPDATE SET STATUS=excluded.STATUS;'
+    COMMAND_GET_STATUS = 'SELECT * FROM STATUS WHERE EXPID=?;'
     COMMAND_ADD_LOSS = 'INSERT INTO LOSS (EXPID, KIND, EPOCH, VALUE) VALUES (?, ?, ?, ?)'
+    COMMAND_GET_LOSSES = 'SELECT * FROM LOSS WHERE EXPID=?;'
     COMMAND_ADD_HYPERPARAM = 'INSERT INTO HYPERPARAMS (EXPID, NAME, VALUE) VALUES (?, ?, ?)'
+    COMMAND_GET_HYPERPARAMS = 'SELECT * FROM HYPERPARAMS WHERE EXPID=?;'
     COMMAND_ADD_METRICS = 'INSERT INTO METRICS (EXPID, KIND, EPOCH, VALUE) VALUES (?, ?, ?, ?);'
     COMMAND_SET_CONFIG = 'INSERT INTO CONFIG (EXPID, CONFIG) VALUES (?, ?);'
     COMMAND_ADD_STATE = 'INSERT INTO STATE (EXPID, EPOCH, PATH) VALUES (?, ?, ?);'
@@ -74,6 +77,15 @@ class SQLiteDatabase(BaseDatabase):
         self.cursor.execute(self.COMMAND_ADD_HYPERPARAM, (exp_id, name, value))
         self.conn.commit()
 
+    def get_hyperparams(self, exp_id: str) -> dict:
+        self.cursor.execute(self.COMMAND_GET_HYPERPARAMS, (exp_id,))
+        results = self.cursor.fetchall()
+
+        rv = dict()
+        for (_, k, v) in results:
+            rv[k] = v
+        return rv
+
     def add_metric_value(self, exp_id: str, kind: str, epoch: int, value: float):
         self.cursor.execute(self.COMMAND_ADD_METRICS, (exp_id, kind, epoch, value))
         self.conn.commit()
@@ -101,3 +113,39 @@ class SQLiteDatabase(BaseDatabase):
 
         state_file = results[0][0]
         return self.desanitise_path(state_file)
+
+    def get_experiment_details(self, exp_id) -> dict:
+        self.cursor.execute(self.COMMAND_GET_STATUS, (exp_id,))
+        results = self.cursor.fetchall()
+
+        if not results:
+            return dict(error=True, why='No results returned.')
+        elif len(results) > 1:
+            return dict(error=True, why='More results than expected.')
+
+        status = results[0][1]
+
+        self.cursor.execute(self.COMMAND_GET_LOSSES, (exp_id,))
+        results = self.cursor.fetchall()
+
+        if results:
+            res_by_cols = list(zip(*results))
+
+            epochs = res_by_cols[1]
+            loss_kinds = res_by_cols[2]
+            losses = res_by_cols[3]
+            uniq_kinds = set(loss_kinds)
+            losses = {
+                k: dict(
+                    loss=[l for l, lk in zip(losses, loss_kinds) if lk == k],
+                    epoch=[e for e, lk in zip(epochs, loss_kinds) if lk == k],
+                )
+                for k in uniq_kinds
+            }
+        else:
+            losses = dict()
+
+        return dict(
+            status=status,
+            losses=losses
+        )
