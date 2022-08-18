@@ -4,26 +4,42 @@
     <title>MLDB - Machine Learning Database</title>
     <link rel="stylesheet" href="index.css" />
     <script src="index.js" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" integrity="sha512-1sCRPdkRXhBV2PBLUdRb4tMg1w2YPf37qatUFeS7zlBy7jJI8Lf4VHwWfZZfpXtYSLy85pkm9GaYVYMfw5BC1A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
     <div class="sidebar">
         <div class="sidebar-contents">
-            <h1><a href="#" onclick="display_splash()">MLDB</a></h1>
-            <a href="#" onclick="show_status()">All Experiment Status</a>
-            <a href="#" onclick="show_running_experiments()">Running Experiments</a>
-            <a href="#" onclick="show_completed_experiments()">Completed Experiments</a>
-            <a href="#" onclick="display_about()">About</a>
+            <div style="text-align: center;">
+                <h1><a href="/">MLDB</a></h1>
+                <a href="/index.html?show=status&kind=all">All experiments</a><br/>
+                <a href="/index.html?show=status&kind=completed">Completed</a><br/>
+                <a href="/index.html?show=status&kind=running">In progress</a><br/>
+                <a href="/index.html?show=about">About MLDB</a>
+            </div>
+            <div style="position: absolute; bottom: 5px; font-size: small">
+                <a href="https://github.com/cbosoft/mldb"><i class="fa-brands fa-github"></i> mldb on github</a>
+                <br/>
+                <a href="https://cmjb.tech"><i class="fa-solid fa-book"></i> developer</a>
+            </div>
         </div>
     </div>
     <div class="content">
         <!-- Splash -->
         <div id="splash-container" class="container">
-        <h1 id="splash-title">Machine Learning Database: Web Explorer</h1>
+            <h1 id="splash-title">Machine Learning Database</h1>
+            <h2>Data Explorer</h2>
         </div>
 
         <!-- About -->
         <div id="about-container" class="container" style="display: none;">
         <h1 id="about-title">About</h1>
+        </div>
+
+        <!-- Error -->
+        <div id="error-container" class="container" style="display: none;">
+            <h1 style="color: red;">Error:<span id="error-message"></span></h1>
+            Contact the admin for help, or try again later.
         </div>
 
         <!-- Results of various kinds -->
@@ -37,40 +53,38 @@
         <!-- https://www.chartjs.org/docs/latest/ -->
 
         <!-- Experiment -->
-        <div id="experiment-details-container" class="container" style="display: block">
+        <div id="experiment-details-container" class="container" style="display: none">
             <h1 id="experiment-details-title">Experiment: XXX</h1>
             <div class="subcontainer">
-            <div id="experiment-details-status" class="subitem">Status:<span id="experiment-status">foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
-            <div class="subitem">Status:<span>foo</span></div>
+                <div id="experiment-details-status" class="subitem">
+                    <h3>Status</h3>
+                    <span id="experiment-status"></span>
+                </div>
+                <div id="experiment-details-config" class="subitem">
+                    <h3>Config</h3>
+                    <div id="experiment-config"></div>
+                </div>
+                <div id="experiment-details-loss" class="subitem">
+                    <h3>Loss: Train v Valid</h3>
+                    <canvas id="experiment-loss-plot" width="800" height="400"></canvas>
+                    <span style="color: red; font-weight: bold; display: none;" id="experiment-details-loss-plot-error">No data for plot.</span>
+                </div>
+                <div id="experiment-details-metrics" class="subitem">
+                    <h3>Metrics</h3>
+                    <canvas id="experiment-metrics-plot" width="800" height="400"></canvas>
+                    <span style="color: red; font-weight: bold; display: none;" id="experiment-details-metrics-plot-error">No data for plot.</span>
+                </div>
             </div>
         </div>
+
+        <!-- Database connection information -->
+        <div style="position: absolute; bottom: 10px; font-size: small; right: 10px;">
+            <code>Connected to database <!--CONNINFO--> </code>
+        </div>
     </div>
+
+    <script type="text/javascript">
+        //SCRIPT GOES HERE//
+    </script>
 </body>
 </html>

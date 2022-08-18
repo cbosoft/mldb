@@ -1,35 +1,3 @@
-function show_status()
-{
-    send_request("all_status");
-}
-
-function show_running_experiments()
-{
-    send_request("running");
-}
-
-function show_completed_experiments()
-{
-    send_request("completed");
-}
-
-function send_request(query)
-{
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", window.location.href, true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onreadystatechange = () => { // Call a function when the state changes.
-      if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-          console.log('response:')
-          console.log(xhr.responseText);
-        results_object = JSON.parse(xhr.responseText);
-        display_result(results_object);
-      }
-    }
-    xhr.send(JSON.stringify({
-        query: query
-    }));
-}
 
 function hide_all()
 {
@@ -37,12 +5,6 @@ function hide_all()
     for (let i = 0; i < elements.length; i++) {
         elements[i].style.display = "none";
     }
-}
-
-function display_splash()
-{
-    hide_all()
-    document.getElementById("splash-container").style.display = "block";
 }
 
 function display_about()
@@ -69,7 +31,7 @@ function display_status_table(results_object)
 
     for (i in results_object.experiments) {
         table_src += "<tr>";
-        table_src += "<td class=\"clickable\">" + results_object.experiments[i] + "</td>";
+        table_src += "<td><a href='/index.html?show=details&expid=" + results_object.experiments[i] + "'>" + results_object.experiments[i] + "</a></td>";
         table_src += "<td>" + results_object.statuses[i] + "</td>";
         table_src += "</tr>";
     }
