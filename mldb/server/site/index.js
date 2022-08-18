@@ -129,9 +129,38 @@ function display_exp_details(results_object) {
         loss_canv.style.display = "none";
     }
 
+
+    var metrics_canv_low = document.getElementById("experiment-metrics-plot-low");
+    var metrics_canv_high = document.getElementById("experiment-metrics-plot-high");
+    var metrics_err = document.getElementById("experiment-details-metrics-plot-error");
+    if (results_object.hasOwnProperty('metrics') && (results_object.metrics.hasOwnProperty('low_data') || results_object.metrics.hasOwnProperty('high_data'))) {
+        metrics_err.style.display = "none";
+
+        if (results_object.metrics.hasOwnProperty('low_data')) {
+            metrics_plot_low(metrics_canv_low, results_object.metrics.low_data);
+            metrics_canv_low.style.display = "block";
+        }
+        else {
+            metrics_canv_low.style.display = "none";
+        }
+
+        if (results_object.metrics.hasOwnProperty('high_data')) {
+            metrics_plot_high(metrics_canv_high, results_object.metrics.high_data);
+            metrics_canv_high.style.display = "block";
+        }
+        else {
+            metrics_canv_high.style.display = "none";
+        }
+    }
+    else {
+        metrics_err.style.display = "block";
+        metrics_canv_low.style.display = "none";
+        metrics_canv_high.style.display = "none";
+    }
+
 }
 
-var loss_chart = '';
+var loss_chart;
 
 function loss_plot(canv, train, valid)
 {
@@ -203,48 +232,91 @@ function loss_plot(canv, train, valid)
 }
 
 
-function metrics_plot(canv, metrics)
-{
+var metrics_chart_low, metrics_chart_high;
+
+function create_metrics_chart(canv) {
     const ctx = canv.getContext("2d");
-    const chart = new Chart(ctx, {
-        type: 'scatter',
-        data: {
-            datasets: [{
-                label: 'Training Loss',
-                data: train,
-                borderWidth: 1,
-                backgroundColor: "steelblue"
-            }, {
-                label: 'Valid Loss',
-                data: valid,
-                borderWidth: 1,
-                backgroundColor: "red"
-            },]
-        },
+    return new Chart(ctx, {
+        type: 'bar',
         options: {
-            showLine: true,
-            events: [],
-            scales: {
-                xAxis: {
-                    type: "logarithmic",
-                    title: {
-                        display: true,
-                        text: "Epoch [#]"
-                    }
-                },
-                yAxis: {
-                    type: "logarithmic",
-                    title: {
-                        display: true,
-                        text: "Loss"
-                    }
+            plugins: {
+                legend: {
+                    display: false
                 },
             },
-            elements: {
-                point: {
-                    radius: 1
-                }
+            animation: {
+                duration: 0
             }
         }
     });
+}
+
+function metrics_plot_low(canv, metrics) {
+    if (!metrics_chart_low) {
+        metrics_chart_low = create_metrics_chart(canv);
+        metrics_chart_low.options.plugins.title = {
+            display: true,
+            text: "Lower is better"
+        }
+    }
+    metrics_plot(metrics_chart_low, metrics, true);
+}
+
+function metrics_plot_high(canv, metrics) {
+    if (!metrics_chart_high) {
+        metrics_chart_high = create_metrics_chart(canv);
+        metrics_chart_high.options.plugins.title = {
+            display: true,
+            text: "Higher is better"
+        }
+    }
+    metrics_plot(metrics_chart_high, metrics, false);
+}
+
+function metrics_plot(metrics_chart, metrics, lower_is_better)
+{
+    var labels = [];
+    var values = [];
+    var colours = [];
+    for (i in metrics) {
+        labels.push(i);
+        const value = metrics[i];
+        values.push(value);
+
+        var colour = "red";
+        if (lower_is_better) {
+            if (value < 1e-4) {
+                colour = "green";
+            }
+            else if (value < 1e-2) {
+                colour = "yellow";
+            }
+            else if (value < 1) {
+                colour = "orange"
+            }
+        }
+        else {
+            if (value > 0.95) {
+                colour = "green";
+            }
+            else if (value > 0.75) {
+                colour = "yellow";
+            }
+            else if (value > 0.5) {
+                colour = "orange"
+            }
+        }
+        colours.push(colour);
+    }
+
+    metrics_chart.data = {
+        labels: labels,
+        datasets: [
+            {
+                data: values,
+                backgroundColor: colours
+            }
+        ]
+    };
+    metrics_chart.update();
 }

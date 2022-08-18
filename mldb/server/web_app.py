@@ -150,12 +150,24 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
         # if 'error' in config:
         #     return config
 
+        raw_metrics = self.db.get_latest_metrics(expid)
+        if 'error' in raw_metrics:
+            return raw_metrics
+
+        metrics = dict(epoch=raw_metrics['epoch'], expid=raw_metrics['expid'], low_data=dict(), high_data=dict())
+        for k, v in raw_metrics['data'].items():
+            if 'error' in k.lower() or k in {'RMSE', 'MSE', 'SSE'}:
+                metrics['low_data'][k] = v
+            else:
+                metrics['high_data'][k] = v
+
         result = dict(
             title=f'Experiment Details ({expid})',
             kind='details',
             details=details,
             params=params,
             # config=config,
+            metrics=metrics
         )
 
         # If is still training, refresh data every 30 seconds

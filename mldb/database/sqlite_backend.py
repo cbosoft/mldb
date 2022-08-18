@@ -17,6 +17,7 @@ class SQLiteDatabase(BaseDatabase):
     COMMAND_ADD_HYPERPARAM = 'INSERT INTO HYPERPARAMS (EXPID, NAME, VALUE) VALUES (?, ?, ?)'
     COMMAND_GET_HYPERPARAMS = 'SELECT * FROM HYPERPARAMS WHERE EXPID=?;'
     COMMAND_ADD_METRICS = 'INSERT INTO METRICS (EXPID, KIND, EPOCH, VALUE) VALUES (?, ?, ?, ?);'
+    COMMAND_GET_LATEST_METRICS = 'SELECT * FROM METRICS WHERE (EXPID, EPOCH) IN (SELECT EXPID, max(EPOCH) FROM METRICS WHERE EXPID=? GROUP BY EXPID);'
     COMMAND_SET_CONFIG = 'INSERT INTO CONFIG (EXPID, CONFIG) VALUES (?, ?);'
     COMMAND_ADD_STATE = 'INSERT INTO STATE (EXPID, EPOCH, PATH) VALUES (?, ?, ?);'
     COMMAND_GET_STATE = 'SELECT PATH FROM STATE WHERE EXPID=? AND EPOCH=?;'
@@ -148,4 +149,17 @@ class SQLiteDatabase(BaseDatabase):
         return dict(
             status=status,
             losses=losses
+        )
+
+    def get_latest_metrics(self, exp_id) -> dict:
+        self.cursor.execute(self.COMMAND_GET_LATEST_METRICS, (exp_id,))
+        results = self.cursor.fetchall()
+
+        if not results:
+            return dict()
+
+        return dict(
+            expid=exp_id,
+            epoch=results[0][1],
+            data={kind: value for _, __, kind, value in results}
         )

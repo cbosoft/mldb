@@ -53,3 +53,6 @@ class BaseDatabase:
 
     def get_experiment_details(self, exp_id) -> dict:
         raise NotImplementedError
+
+    def get_latest_metrics(self, exp_id) -> dict:
+        raise NotImplementedError
