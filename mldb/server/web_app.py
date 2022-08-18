@@ -1,3 +1,4 @@
+from typing import Optional
 import os
 import json
 from http.server import SimpleHTTPRequestHandler, HTTPServer
@@ -10,6 +11,18 @@ SERVER_SOURCE_DIR = os.path.join(os.path.dirname(__file__), 'site')
 class MLDB_Handler(SimpleHTTPRequestHandler):
 
     db: Database = None
+
+    def run_query(self, query: dict) -> dict:
+        if query['show'] == 'details':
+            return self.get_experiment_details(query['expid'])
+        elif query['kind'] == 'all':
+            return self.get_status_table()
+        elif query['kind'] == 'completed':
+            return self.get_completed_experiments_table()
+        elif query['kind'] == 'running':
+            return self.get_running_experiments_table()
+        else:
+            return dict(error=True, why=f'unhandled query, unknown kind: {query}')
 
     def do_GET(self) -> None:
 
@@ -28,17 +41,8 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
                 if query['show'] == 'about':
                     js = 'display_about();'
                 elif query['show'] in {'status', 'details'}:
-                    if query['show'] == 'details':
-                        obj = self.get_experiment_details(query['expid'])
-                    elif query['kind'] == 'all':
-                        obj = self.get_status_table()
-                    elif query['kind'] == 'completed':
-                        obj = self.get_completed_experiments_table()
-                    elif query['kind'] == 'running':
-                        obj = self.get_running_experiments_table()
-                    else:
-                        print(f'unhandled query, unknown kind: {query}')
-                        obj = None
+
+                    obj = self.run_query(query)
 
                     if obj is not None:
                         obj_str = json.dumps(obj).replace('"', '\\"')
@@ -65,6 +69,20 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
             self.wfile.write(index_html.encode())
         else:
             super().do_GET()
+
+    def get_post_content(self) -> str:
+        content_len = int(self.headers.get('Content-Length'))
+        return self.rfile.read(content_len).decode()
+
+    def do_POST(self):
+        query = json.loads(self.get_post_content())
+        result = self.run_query(query)
+
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(json.dumps(result).encode())
+
 
     def get_running_experiments_table(self) -> dict:
         _ = self.db
@@ -139,6 +157,18 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
             params=params,
             # config=config,
         )
+
+        # If is still training, refresh data every 30 seconds
+        if 'status' in details:
+            if details['status'] == 'training':
+                result['refresh'] = dict(
+                    query=dict(
+                        show='details',
+                        expid=expid
+                    ),
+                    period=30_000
+                )
+
         return result
 
 

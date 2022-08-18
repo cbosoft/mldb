@@ -1,3 +1,19 @@
+function send_request(query)
+{
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", window.location.href, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onreadystatechange = () => { // Call a function when the state changes.
+      if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+          console.log('response:')
+          console.log(xhr.responseText);
+        results_object = JSON.parse(xhr.responseText);
+        display_result(results_object);
+      }
+    }
+    xhr.send(JSON.stringify(query));
+}
+
 
 function hide_all()
 {
@@ -24,6 +40,13 @@ function display_result(results_object)
     }
     else if (results_object.kind === "details") {
         display_exp_details(results_object);
+    }
+
+    if (results_object.hasOwnProperty("refresh")) {
+        var query = results_object.refresh.query;
+        var timeout = results_object.refresh.period;
+
+        setTimeout(()=>{ send_request(query); }, timeout);
     }
 }
 
@@ -108,54 +131,75 @@ function display_exp_details(results_object) {
 
 }
 
+var loss_chart = '';
 
 function loss_plot(canv, train, valid)
 {
     const ctx = canv.getContext("2d");
-    const chart = new Chart(ctx, {
-        type: 'scatter',
-        data: {
-            datasets: [{
-                label: 'Training Loss',
-                data: train,
-                backgroundColor: "steelblue",
-                borderColor: "steelblue"
-            }, {
-                label: 'Valid Loss',
-                data: valid,
-                backgroundColor: "orange",
-                borderColor: "orange"
-            },]
-        },
-        options: {
-            showLine: true,
-            events: [],
-            scales: {
-                xAxis: {
-                    type: "logarithmic",
-                    title: {
-                        display: true,
-                        text: "Epoch [#]"
+
+    if (!loss_chart) {
+        loss_chart = new Chart(ctx, {
+            type: 'scatter',
+            options: {
+                showLine: true,
+                scales: {
+                    xAxis: {
+                        type: "logarithmic",
+                        title: {
+                            display: true,
+                            text: "Epoch [#]"
+                        }
+                    },
+                    yAxis: {
+                        type: "logarithmic",
+                        title: {
+                            display: true,
+                            text: "Loss"
+                        }
+                    },
+                },
+                elements: {
+                    point: {
+                        radius: 1.5
+                    },
+                    line: {
+                        width: 1
                     }
                 },
-                yAxis: {
-                    type: "logarithmic",
-                    title: {
-                        display: true,
-                        text: "Loss"
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                var xy = context.parsed;
+                                return 'Epoch: ' + xy.x + '// Loss: ' + xy.y;
+                            }
+                        }
                     }
                 },
-            },
-            elements: {
-                point: {
-                    radius: 0
+                interaction: {
+                    mode: 'x'
                 },
-                line: {
-                    width: 1
+                animation: {
+                    duration: 0
                 }
             }
-        }
-    });
+        });
+    }
+
+    loss_chart.data = {
+        datasets: [{
+            label: 'Training Loss',
+            data: train,
+            backgroundColor: "steelblue",
+            borderColor: "steelblue"
+        }, {
+            label: 'Valid Loss',
+            data: valid,
+            backgroundColor: "orange",
+            borderColor: "orange"
+        },]
+    };
+    loss_chart.update();
 }
 
 
