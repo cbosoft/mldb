@@ -16,11 +16,13 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
         if query['show'] == 'details':
             return self.get_experiment_details(query['expid'])
         elif query['kind'] == 'all':
-            return self.get_status_table()
+            return self.get_status_table(recent=query.get('recent', False))
         elif query['kind'] == 'completed':
-            return self.get_completed_experiments_table()
+            return self.get_completed_experiments_table(recent=query.get('recent', False))
         elif query['kind'] == 'running':
-            return self.get_running_experiments_table()
+            return self.get_running_experiments_table(recent=query.get('recent', False))
+        elif query['kind'] == 'failure':
+            return self.get_failed_experiments_table(recent=query.get('recent', False))
         else:
             return dict(error=True, why=f'unhandled query, unknown kind: {query}')
 
@@ -38,20 +40,17 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
 
             if query:
                 query = dict([tuple(p.split('=')) for p in query.split('&')])
-                if query['show'] == 'about':
+                if 'show' in query and query['show'] == 'about':
                     js = 'display_about();'
-                elif query['show'] in {'status', 'details'}:
-
-                    obj = self.run_query(query)
-
-                    if obj is not None:
-                        obj_str = json.dumps(obj).replace('"', '\\"')
-                        js = f'var RESULT_STR = "{obj_str}"; var RESULT_OBJ = JSON.parse(RESULT_STR); display_result(RESULT_OBJ);'
-                    else:
-                        js = ''
                 else:
-                    print(f'unhandled query: {query}')
-                    js = ''
+                    if 'show' in query and query['show'] in {'status', 'details'}:
+                        obj = self.run_query(query)
+                    else:
+                        obj = dict(error=True, why='unrecognised query')
+
+                    obj_str = json.dumps(obj).replace('"', '\\"')
+                    js = f'var RESULT_STR = "{obj_str}"; var RESULT_OBJ = JSON.parse(RESULT_STR); display_result(RESULT_OBJ);'
+
             else:
                 js = ''
 
@@ -84,17 +83,19 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps(result).encode())
 
 
-    def get_running_experiments_table(self) -> dict:
+    def get_table(self, query, title, recent: bool) -> dict:
         _ = self.db
-        self.db.cursor.execute('SELECT * FROM status WHERE status.status=\'TRAINING\';')
+        self.db.cursor.execute(query)
         rows = self.db.cursor.fetchall()
         if rows:
+            if recent:
+                rows = rows[-10:]
             experiments, statuses = zip(*rows)
         else:
             experiments, statuses = [], []
 
         result = dict(
-            title='Running Experiments',
+            title=('Most Recent ' if recent else '') + title,
             kind='status_table',
             headings=['EXPID', 'STATUS'],
             experiments=experiments,
@@ -102,39 +103,17 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
         )
         return result
 
-    def get_completed_experiments_table(self) -> dict:
-        self.db.cursor.execute('SELECT * FROM status WHERE status.status=\'COMPLETE\';')
-        rows = self.db.cursor.fetchall()
-        if rows:
-            experiments, statuses = zip(*rows)
-        else:
-            experiments, statuses = [], []
+    def get_failed_experiments_table(self, recent: bool) -> dict:
+        return self.get_table('SELECT * FROM status WHERE status.status=\'ERROR\' or status.status=\'CANCELLED\';', 'Running Experiments', recent)
 
-        result = dict(
-            title='Completed Experiments',
-            kind='status_table',
-            headings=['EXPID', 'STATUS'],
-            experiments=experiments,
-            statuses=statuses
-        )
-        return result
+    def get_running_experiments_table(self, recent: bool) -> dict:
+        return self.get_table('SELECT * FROM status WHERE status.status=\'TRAINING\';', 'Running Experiments', recent)
 
-    def get_status_table(self) -> dict:
-        self.db.cursor.execute('SELECT * FROM status;')
-        rows = self.db.cursor.fetchall()
-        if rows:
-            experiments, statuses = zip(*rows)
-        else:
-            experiments, statuses = [], []
+    def get_completed_experiments_table(self, recent: bool) -> dict:
+        return self.get_table('SELECT * FROM status WHERE status.status=\'COMPLETE\';', 'Completed Experiments', recent)
 
-        result = dict(
-            title='Experiment Status',
-            kind='status_table',
-            headings=['EXPID', 'STATUS'],
-            experiments=experiments,
-            statuses=statuses
-        )
-        return result
+    def get_status_table(self, recent: bool) -> dict:
+        return self.get_table('SELECT * FROM status;', 'Experiments Status', recent)
 
     def get_experiment_details(self, expid) -> dict:
         details = self.db.get_experiment_details(expid)
