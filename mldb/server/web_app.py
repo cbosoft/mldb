@@ -133,12 +133,15 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
         if 'error' in raw_metrics:
             return raw_metrics
 
-        metrics = dict(epoch=raw_metrics['epoch'], expid=raw_metrics['expid'], low_data=dict(), high_data=dict())
-        for k, v in raw_metrics['data'].items():
-            if 'error' in k.lower() or k in {'RMSE', 'MSE', 'SSE'}:
-                metrics['low_data'][k] = v
-            else:
-                metrics['high_data'][k] = v
+        if raw_metrics:
+            metrics = dict(epoch=raw_metrics['epoch'], expid=raw_metrics['expid'], low_data=dict(), high_data=dict())
+            for k, v in raw_metrics['data'].items():
+                if 'error' in k.lower() or k in {'RMSE', 'MSE', 'SSE'}:
+                    metrics['low_data'][k] = v
+                else:
+                    metrics['high_data'][k] = v
+        else:
+            metrics = raw_metrics
 
         result = dict(
             title=f'Experiment Details ({expid})',
