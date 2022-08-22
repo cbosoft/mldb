@@ -27,10 +27,11 @@ class PostgreSQLDatabase(SQLiteDatabase):
         self.host = CONFIG.host
         self.user = CONFIG.user
         self.port = CONFIG.port
+        self.database = CONFIG.database
 
     def connect(self):
         self.conn = connect(**CONFIG.as_dict())
         self.cursor = self.conn.cursor()
 
     def __repr__(self):
-        return f'PostgreSQL://{self.user}@{self.host}:{self.port}'
+        return f'PostgreSQL://{self.user}@{self.host}:{self.port}/{self.database}'
