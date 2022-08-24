@@ -1,7 +1,8 @@
 from typing import Optional
 import os
-import json
 from http.server import SimpleHTTPRequestHandler, HTTPServer
+
+import simplejson as json
 
 from ..database import Database
 
@@ -48,7 +49,7 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
                     else:
                         obj = dict(error=True, why='unrecognised query')
 
-                    obj_str = json.dumps(obj).replace('"', '\\"')
+                    obj_str = json.dumps(obj, ignore_nan=True).replace('"', '\\"')
                     js = f'var RESULT_STR = "{obj_str}"; var RESULT_OBJ = JSON.parse(RESULT_STR); display_result(RESULT_OBJ);'
 
             else:
@@ -80,7 +81,7 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write(json.dumps(result).encode())
+        self.wfile.write(json.dumps(result, ignore_nan=True).encode())
 
 
     def get_table(self, query, title, recent: bool) -> dict:
