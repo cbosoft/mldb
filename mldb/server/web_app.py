@@ -137,7 +137,8 @@ class MLDB_Handler(SimpleHTTPRequestHandler):
         if raw_metrics:
             metrics = dict(epoch=raw_metrics['epoch'], expid=raw_metrics['expid'], low_data=dict(), high_data=dict())
             for k, v in raw_metrics['data'].items():
-                if 'error' in k.lower() or k in {'RMSE', 'MSE', 'SSE'}:
+                errors = ['error', 'mse', 'sse']
+                if any(e in k.lower() for e in errors):
                     metrics['low_data'][k] = v
                 else:
                     metrics['high_data'][k] = v
