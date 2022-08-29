@@ -1,5 +1,6 @@
 from sqlite3 import connect
 import os
+import json
 
 from ..config import CONFIG, SQLiteConfig
 from .base import BaseDatabase
@@ -23,6 +24,10 @@ class SQLiteDatabase(BaseDatabase):
     COMMAND_GET_STATE = 'SELECT PATH FROM STATE WHERE EXPID=? AND EPOCH=?;'
     COMMAND_ADD_LR = 'INSERT INTO LEARNINGRATE (EXPID, EPOCH, VALUE) VALUES (?, ?, ?)'
     COMMAND_GET_LRS = 'SELECT (EPOCH, VALUE) FROM LEARNINGRATE WHERE EXPID=? ORDER BY EPOCH;'
+    COMMAND_ADD_QUALRESMETA = 'INSERT INTO QUALITATIVERESULTSMETA (EXPID, PLOTID, VALUE) VALUES (?, ?, ?)'
+    COMMAND_ADD_QUALRES = 'INSERT INTO QUALITATIVERESULTS (EXPID, EPOCH, PLOTID, VALUE) VALUES (?, ?, ?, ?)'
+    COMMAND_GET_QUALRES = 'SELECT * FROM QUALITATIVERESULTS WHERE EXPID=? AND PLOTID=? ORDER BY EPOCH ASC;'
+    COMMAND_GET_QUALRESMETA = 'SELECT * FROM QUALITATIVERESULTSMETA WHERE EXPID=? AND PLOTID=?;'
 
     def __init__(self, root_dir=None):
         super().__init__(os.path.dirname(CONFIG.db_path) if root_dir is None else root_dir)
@@ -64,6 +69,13 @@ class SQLiteDatabase(BaseDatabase):
             'CREATE TABLE IF NOT EXISTS \
             LEARNINGRATE (EXPID TEXT NOT NULL, EPOCH INTEGER NOT NULL, VALUE TEXT NOT NULL,\
             UNIQUE(EXPID, EPOCH));',
+
+            'CREATE TABLE IF NOT EXISTS \
+            QUALITATIVERESULTSMETA (EXPID TEXT NOT NULL, PLOTID TEXT NOT NULL, VALUE TEXT NOT NULL,\
+            UNIQUE(EXPID, PLOTID));',
+
+            'CREATE TABLE IF NOT EXISTS \
+            QUALITATIVERESULTS (EXPID TEXT NOT NULL, EPOCH INTEGER NOT NULL, PLOTID TEXT NOT NULL, VALUE TEXT NOT NULL);',
         ]
         for command in commands:
             self.cursor.execute(command)
@@ -177,3 +189,27 @@ class SQLiteDatabase(BaseDatabase):
     def get_lr_values(self, exp_id: str):
         self.cursor.execute(self.COMMAND_GET_LRS, (exp_id,))
         return self.cursor.fetchall()
+
+    def add_qualitative_metadata_json(self, exp_id: str, plot_id: str, value: str):
+        self.cursor.execute(self.COMMAND_ADD_QUALRESMETA, (exp_id, plot_id, value))
+        self.conn.commit()
+
+    def add_qualitative_result_json(self, exp_id: str, epoch: int, plot_id: str, value: str):
+        self.cursor.execute(self.COMMAND_ADD_QUALRES, (exp_id, epoch, plot_id, value))
+        self.conn.commit()
+
+    def get_qualitative_result(self, exp_id: str, plot_id: str):
+        self.cursor.execute(self.COMMAND_GET_QUALRESMETA, (exp_id, plot_id))
+        meta_enc = self.cursor.fetchall()
+
+        qualres = json.loads(meta_enc[0][-1])
+
+        self.cursor.execute(self.COMMAND_GET_QUALRES, (exp_id, plot_id))
+        data = self.cursor.fetchall()
+
+        qualres['data'] = []
+        for row in data:
+            # columns = ['expid', 'epoch', 'plotid', 'value']
+            qualres['data'].append(dict(epoch=int(row[1]), **json.loads(row[-1])))
+
+        return qualres

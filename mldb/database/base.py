@@ -1,4 +1,7 @@
 import os
+import json
+
+import numpy as np
 
 
 class BaseDatabase:
@@ -61,4 +64,47 @@ class BaseDatabase:
         raise NotImplementedError
 
     def get_lr_values(self, exp_id: str):
+        raise NotImplementedError
+
+    @classmethod
+    def sanitise_value(cls, v):
+        if isinstance(v, (str, int, float)):
+            return v
+        elif hasattr(v, 'detach') and hasattr(v, 'cpu') and hasattr(v, 'numpy'):
+            return cls.sanitise_value(v.detach().cpu().numpy())
+        elif isinstance(v, (np.float16, np.float32, np.float64)):
+            return float(v)
+        elif isinstance(v, (np.int8, np.int16, np.int32, np.int64,
+                            np.uint8, np.uint16, np.uint32, np.uint64)):
+            return int(v)
+        elif hasattr(v, '__iter__'):
+            return [cls.sanitise_value(vi) for vi in v]
+        else:
+            raise ValueError(f'Unexpected type encountered: {type(v)}.')
+
+    def add_qualitative_result(self, exp_id: str, epoch: int, plot_id: str, output, target=None, **extra):
+        data = dict(
+            output=self.sanitise_value(output),
+            **extra
+        )
+        if target is not None:
+            data['target'] = self.sanitise_value(target)
+
+        self.add_qualitative_result_json(
+            exp_id,
+            epoch,
+            plot_id,
+            json.dumps(data)
+        )
+
+    def add_qualitative_result_json(self, exp_id: str, epoch: int, plot_id: str, value: str):
+        raise NotImplementedError
+
+    def add_qualitative_metadata(self, exp_id: str, plot_id: str, kind: str, **meta_data):
+        self.add_qualitative_metadata_json(exp_id, plot_id, json.dumps(dict(kind=kind, **meta_data)))
+
+    def add_qualitative_metadata_json(self, exp_id: str, plot_id: str, value: str):
+        raise NotImplementedError
+
+    def get_qualitative_result(self, exp_id: str, plot_id: str):
         raise NotImplementedError
