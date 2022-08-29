@@ -21,6 +21,8 @@ class SQLiteDatabase(BaseDatabase):
     COMMAND_SET_CONFIG = 'INSERT INTO CONFIG (EXPID, CONFIG) VALUES (?, ?);'
     COMMAND_ADD_STATE = 'INSERT INTO STATE (EXPID, EPOCH, PATH) VALUES (?, ?, ?);'
     COMMAND_GET_STATE = 'SELECT PATH FROM STATE WHERE EXPID=? AND EPOCH=?;'
+    COMMAND_ADD_LR = 'INSERT INTO LEARNINGRATE (EXPID, EPOCH, VALUE) VALUES (?, ?, ?)'
+    COMMAND_GET_LRS = 'SELECT (EPOCH, VALUE) FROM LEARNINGRATE WHERE EXPID=? ORDER BY EPOCH;'
 
     def __init__(self, root_dir=None):
         super().__init__(os.path.dirname(CONFIG.db_path) if root_dir is None else root_dir)
@@ -58,6 +60,10 @@ class SQLiteDatabase(BaseDatabase):
             'CREATE TABLE IF NOT EXISTS \
             HYPERPARAMS (EXPID TEXT NOT NULL, NAME TEXT NOT NULL, VALUE TEXT NOT NULL,\
             UNIQUE(EXPID, NAME));',
+
+            'CREATE TABLE IF NOT EXISTS \
+            LEARNINGRATE (EXPID TEXT NOT NULL, EPOCH INTEGER NOT NULL, VALUE TEXT NOT NULL,\
+            UNIQUE(EXPID, EPOCH));',
         ]
         for command in commands:
             self.cursor.execute(command)
@@ -163,3 +169,11 @@ class SQLiteDatabase(BaseDatabase):
             epoch=results[0][1],
             data={kind: value for _, __, kind, value in results}
         )
+
+    def add_lr_value(self, exp_id: str, epoch: int, value: float):
+        self.cursor.execute(self.COMMAND_ADD_LR, (exp_id, epoch, value))
+        self.conn.commit()
+
+    def get_lr_values(self, exp_id: str):
+        self.cursor.execute(self.COMMAND_GET_LRS, (exp_id,))
+        return self.cursor.fetchall()

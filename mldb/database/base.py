@@ -56,3 +56,9 @@ class BaseDatabase:
 
     def get_latest_metrics(self, exp_id) -> dict:
         raise NotImplementedError
+
+    def add_lr_value(self, exp_id: str, epoch: int, value: float):
+        raise NotImplementedError
+
+    def get_lr_values(self, exp_id: str):
+        raise NotImplementedError
