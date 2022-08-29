@@ -43,4 +43,5 @@ def test_db():
         assert rows[0][0] == f'{today}_TEST_2'
 
         db.cursor.execute('DELETE FROM METRICS WHERE EXPID LIKE %s;', (f'{today}_TEST_%',))
+        db.cursor.execute('DELETE FROM STATUS WHERE EXPID LIKE %s;', (f'{today}_TEST_%',))
         db.conn.commit()
