@@ -122,6 +122,7 @@ class SQLiteDatabase(BaseDatabase):
         except Exception as e:
             if error_on_collision:
                 raise e
+            self.conn.rollback()
 
     def get_state_file(self, exp_id: str, epoch: int) -> str:
         self.cursor.execute(self.COMMAND_GET_STATE, (exp_id, epoch))
