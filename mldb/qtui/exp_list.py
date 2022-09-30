@@ -95,7 +95,7 @@ class ExperimentListWidget(QWidget):
         n = len(rows)
         self.table_experiments.setRowCount(n)
         dp = 100//n
-        for i, (expid, status) in enumerate(rows):
+        for i, (expid, status) in enumerate(reversed(rows)):
             self.table_experiments.setItem(i, 0, QTableWidgetItem(expid))
             self.table_experiments.setItem(i, 1, QTableWidgetItem(status))
             self.set_progress((i + 1)*dp)
