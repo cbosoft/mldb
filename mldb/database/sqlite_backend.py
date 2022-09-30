@@ -165,9 +165,17 @@ class SQLiteDatabase(BaseDatabase):
         else:
             losses = dict()
 
+        lr_es, lrs = [], []
+        for lr in self.get_lr_values(exp_id):
+            e, lr = lr[0][1:-1].split(',')
+            lr_es.append(int(e))
+            lrs.append(float(lr))
+
         return dict(
+            expid=exp_id,
             status=status,
-            losses=losses
+            losses=losses,
+            lrs=dict(epochs=lr_es, lrs=lrs)
         )
 
     def get_latest_metrics(self, exp_id) -> dict:
