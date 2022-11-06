@@ -1,14 +1,12 @@
 import numpy as np
 from PySide6.QtWidgets import (
-    QWidget, QDialog, QVBoxLayout, QLabel,
-    QTextEdit,
-    QTabWidget, QFormLayout, QTableWidget, QTableWidgetItem, QHeaderView
+    QWidget, QDialog, QVBoxLayout,
+    QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView
 )
-from PySide6.QtGui import QTextOption
 
 from .plot_widget import PlotWidget
 from .exp_views import ExpLossAndLRView, ExpConfigView
-from .db_iop import DBQuery, DBExpMetrics, DBExpQualResults, DBExpHyperParams
+from .db_iop import DBExpMetrics, DBExpQualResults
 
 
 def plot_widget_and_table():
@@ -34,11 +32,6 @@ class ExpViewDialog(QDialog):
         self.tabs = QTabWidget()
         self.layout.addWidget(self.tabs)
 
-        self.exp_details = QWidget()
-        self.exp_details.layout = QFormLayout(self.exp_details)
-        self.exp_details.layout.addRow('Exp. ID', QLabel(expid))
-        self.tabs.addTab(self.exp_details, 'Details')
-
         self.tabs.addTab(ExpConfigView(expid), 'Config')
         self.tabs.addTab(ExpLossAndLRView(expid), 'Loss v Epoch')
 
@@ -62,7 +55,6 @@ class ExpViewDialog(QDialog):
 
         DBExpMetrics(self.expid, self.metrics_returned).start()
         DBExpQualResults(self.expid, self.qualres_returned).start()
-        DBExpHyperParams(self.expid, self.hparams_returned).start()
 
     def metrics_returned(self, d: dict):
         low_metrics = {}
@@ -134,7 +126,3 @@ class ExpViewDialog(QDialog):
                 w.axes.plot(bins, np.squeeze(o), color=colour)
             w.redraw_and_flush()
             self.tabs.addTab(w, f'QualRes: {plotid}')
-
-    def hparams_returned(self, h):
-        for k, v in h.items():
-            self.exp_details.layout.addRow(k, QLabel(v))
