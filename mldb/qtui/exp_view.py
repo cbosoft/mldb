@@ -23,6 +23,12 @@ class ExpViewDialog(QDialog):
         self.exp_details.layout.addRow('Exp. ID', QLabel(expid))
         self.tabs.addTab(self.exp_details, 'Details')
 
+        self.full_config = QTextEdit()
+        self.full_config.setReadOnly(True)
+        self.full_config.setFont('Monaco')  # TODO: monaco on macos, consolas on windows
+        self.full_config.setWordWrapMode(QTextOption.NoWrap)
+        self.tabs.addTab(self.full_config, 'config.yaml')
+
         self.loss_plot = PlotWidget(ax_rect=(0.2, 0.2, 0.6, 0.7))
         self.loss_plot.axes.set_title('Loss v Epoch')
         self.loss_plot.axes.set_xscale('log')
@@ -42,11 +48,19 @@ class ExpViewDialog(QDialog):
 
         self.setWindowTitle(f'{expid} - Details')
 
+        DBQuery(f'SELECT * FROM CONFIG WHERE EXPID=\'{self.expid}\';', self.config_returned).start()
         DBExpDetails(self.expid, self.details_returned).start()
         DBExpMetrics(self.expid, self.metrics_returned).start()
         DBExpQualResults(self.expid, self.qualres_returned).start()
         DBExpHyperParams(self.expid, self.hparams_returned).start()
 
+    def config_returned(self, v):
+        _, path = v[0]
+        with open(path) as f:
+            t = f.read()
+
+        t = f'# {path}\n{t}'
+        self.full_config.setText(t)
     def details_returned(self, d: dict):
         self.loss_plot.clear()
         self.exp_details.layout.addRow('Status', QLabel(d['status']))
