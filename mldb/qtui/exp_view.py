@@ -1,9 +1,25 @@
 import numpy as np
-from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QLabel, QTabWidget, QFormLayout
+from PySide6.QtWidgets import (
+    QWidget, QDialog, QVBoxLayout, QLabel,
+    QTextEdit,
+    QTabWidget, QFormLayout, QTableWidget, QTableWidgetItem, QHeaderView
+)
+from PySide6.QtGui import QTextOption
 
 from .plot_widget import PlotWidget
 
-from .db_iop import DBExpDetails, DBExpMetrics, DBExpQualResults, DBExpHyperParams
+from .db_iop import DBQuery, DBExpDetails, DBExpMetrics, DBExpQualResults, DBExpHyperParams
+
+
+def plot_widget_and_table():
+    w = QWidget()
+    w.layout = QVBoxLayout(w)
+    plt = PlotWidget()
+    w.layout.addWidget(plt)
+    tbl = QTableWidget()
+    tbl.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+    w.layout.addWidget(tbl)
+    return w, plt, tbl
 
 
 class ExpViewDialog(QDialog):
@@ -38,13 +54,21 @@ class ExpViewDialog(QDialog):
         self.lr_ax.set_ylabel('Learning rate')
         self.tabs.addTab(self.loss_plot, 'Loss v Epoch')
 
-        self.metrics_low_plot = PlotWidget()
-        self.metrics_low_plot.axes.set_title('Metrics (lower is better)')
-        self.tabs.addTab(self.metrics_low_plot, 'Metrics (errors)')
+        self.final_metrics_low_widget, self.final_metrics_low_plot, self.final_metrics_low_table = plot_widget_and_table()
+        self.final_metrics_low_plot.axes.set_title('Metrics (lower is better)')
+        # self.tabs.addTab(final_metrics_low_widget, 'Final Metrics (errors)')
 
-        self.metrics_high_plot = PlotWidget()
-        self.metrics_high_plot.axes.set_title('Metrics (higher is better)')
-        self.tabs.addTab(self.metrics_high_plot, 'Metrics (correlations)')
+        self.final_metrics_high_widget, self.final_metrics_high_plot, self.final_metrics_high_table = plot_widget_and_table()
+        self.final_metrics_high_plot.axes.set_title('Metrics (higher is better)')
+        # self.tabs.addTab(final_metrics_high_widget, 'Final Metrics (correlations)')
+
+        # best_metrics_low_widget, self.best_metrics_low_plot, self.best_metrics_low_table = plot_widget_and_table()
+        # self.best_metrics_low_plot.axes.set_title('Metrics (lower is better)')
+        # self.tabs.addTab(best_metrics_low_widget, 'Best Metrics (errors)')
+        #
+        # best_metrics_high_widget, self.best_metrics_high_plot, self.best_metrics_high_table = plot_widget_and_table()
+        # self.best_metrics_high_plot.axes.set_title('Metrics (higher is better)')
+        # self.tabs.addTab(best_metrics_high_widget, 'Best Metrics (correlations)')
 
         self.setWindowTitle(f'{expid} - Details')
 
@@ -56,14 +80,29 @@ class ExpViewDialog(QDialog):
 
     def config_returned(self, v):
         _, path = v[0]
+        hacky_translation = {
+            '../../../../../../media/raid/cboyle/mdpc/cld2psd/training_results':
+                '/Volumes/idrive/Science/SIPBS/cmac/Christopher Boyle/Runs/CLD2PSD',
+            '../../../../../../media/raid/cboyle/mdpc/PSDCR/training_results':
+                '/Volumes/idrive/Science/SIPBS/cmac/Christopher Boyle/Runs/CLD2QC',
+            '../../../../../../media/raid/cboyle/mdpc/mask_rcnn/training_results':
+                '/Volumes/idrive/Science/SIPBS/cmac/Christopher Boyle/Runs/Mask_RCNN',
+            '../../../../../../media/raid/cboyle/mdpc/CLD2QC/training_results':
+                '/Volumes/idrive/Science/SIPBS/cmac/Christopher Boyle/Runs/CLD2QC',
+        }
+        for k, v in hacky_translation.items():
+            path = path.replace(k, v)
+
         with open(path) as f:
             t = f.read()
 
         t = f'# {path}\n{t}'
         self.full_config.setText(t)
+
     def details_returned(self, d: dict):
         self.loss_plot.clear()
         self.exp_details.layout.addRow('Status', QLabel(d['status']))
+        print(d.keys())
 
         try:
             train_losses = d['losses']['train']['loss']
@@ -107,31 +146,41 @@ class ExpViewDialog(QDialog):
             else:
                 high_metrics[m] = v
 
-        low_x = list(range(len(low_metrics)))
-        low_y = list(low_metrics.values())
-        low_labels = list(low_metrics.keys())
-        self.metrics_low_plot.axes.bar(
-            low_x, low_y
-        )
-        self.metrics_low_plot.axes.set_xticks(
-            low_x,
-            low_labels,
-            rotation=45,
-        )
-        self.metrics_low_plot.redraw_and_flush()
+        if low_metrics:
+            low_x = list(range(len(low_metrics)))
+            low_y = list(low_metrics.values())
+            low_labels = list(low_metrics.keys())
+            self.final_metrics_low_plot.axes.bar(
+                low_x, low_y
+            )
+            self.final_metrics_low_plot.axes.set_xticks(
+                low_x,
+                low_labels,
+                rotation=45,
+            )
+            self.final_metrics_low_plot.redraw_and_flush()
+            self.final_metrics_low_table.clear()
+            self.final_metrics_low_table.setColumnCount(2)
+            self.final_metrics_low_table.setRowCount(len(low_labels))
+            for i, (k, v) in enumerate(zip(low_labels, low_y)):
+                self.final_metrics_low_table.setItem(i, 0, QTableWidgetItem(k))
+                self.final_metrics_low_table.setItem(i, 1, QTableWidgetItem(f'{v}'))
+            self.tabs.addTab(self.final_metrics_low_widget, 'Final Metrics (errors)')
 
-        high_x = list(range(len(high_metrics)))
-        high_y = list(high_metrics.values())
-        high_labels = list(high_metrics.keys())
-        self.metrics_high_plot.axes.bar(
-            high_x, high_y
-        )
-        self.metrics_high_plot.axes.set_xticks(
-            high_x,
-            high_labels,
-            rotation=45,
-        )
-        self.metrics_high_plot.redraw_and_flush()
+        if high_metrics:
+            high_x = list(range(len(high_metrics)))
+            high_y = list(high_metrics.values())
+            high_labels = list(high_metrics.keys())
+            self.final_metrics_high_plot.axes.bar(
+                high_x, high_y
+            )
+            self.final_metrics_high_plot.axes.set_xticks(
+                high_x,
+                high_labels,
+                rotation=45,
+            )
+            self.final_metrics_high_plot.redraw_and_flush()
+            self.tabs.addTab(self.final_metrics_high_widget, 'Final Metrics (correlations)')
 
     def qualres_returned(self, q):
         for plotid, qualres in q:
@@ -148,8 +197,8 @@ class ExpViewDialog(QDialog):
             bins = (edges[1:]*edges[:-1])**0.5
             for i, (t, o) in enumerate(zip(targets, outputs)):
                 colour = f'C{i}'
-                w.axes.plot(bins, t, '--', color=colour)
-                w.axes.plot(bins, o, color=colour)
+                w.axes.plot(bins, np.squeeze(t), '--', color=colour)
+                w.axes.plot(bins, np.squeeze(o), color=colour)
             w.redraw_and_flush()
             self.tabs.addTab(w, f'QualRes: {plotid}')
 
