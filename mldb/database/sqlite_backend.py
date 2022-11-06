@@ -28,6 +28,10 @@ class SQLiteDatabase(BaseDatabase):
     COMMAND_ADD_QUALRES = 'INSERT INTO QUALITATIVERESULTS (EXPID, EPOCH, PLOTID, VALUE) VALUES (?, ?, ?, ?)'
     COMMAND_GET_QUALRES = 'SELECT * FROM QUALITATIVERESULTS WHERE EXPID=? AND PLOTID=? ORDER BY EPOCH ASC;'
     COMMAND_GET_QUALRESMETA = 'SELECT * FROM QUALITATIVERESULTSMETA WHERE EXPID=? AND PLOTID=?;'
+    COMMAND_ADD_TO_GROUP = 'INSERT INTO EXPGROUPS (EXPID, GROUPNAME) VALUES (?, ?);'
+    COMMAND_REMOVE_FROM_GROUP = 'DELETE FROM EXPGROUPS WHERE EXPID=? AND GROUPNAME=?;'
+    COMMAND_GET_GROUP = 'SELECT EXPID FROM EXPGROUPS WHERE GROUPNAME=?;'
+    COMMAND_GET_GROUPS_OF_EXP = 'SELECT GROUPNAME FROM EXPGROUPS WHERE EXPID=?;'
 
     def __init__(self, root_dir=None):
         super().__init__(os.path.dirname(CONFIG.db_path) if root_dir is None else root_dir)
@@ -76,6 +80,10 @@ class SQLiteDatabase(BaseDatabase):
 
             'CREATE TABLE IF NOT EXISTS \
             QUALITATIVERESULTS (EXPID TEXT NOT NULL, EPOCH INTEGER NOT NULL, PLOTID TEXT NOT NULL, VALUE TEXT NOT NULL);',
+
+            'CREATE TABLE IF NOT EXISTS \
+            EXPGROUPS (EXPID TEXT NOT NULL, GROUPNAME TEXT NOT NULL, \
+            UNIQUE(EXPID, GROUPNAME));'
         ]
         for command in commands:
             self.cursor.execute(command)
@@ -222,3 +230,21 @@ class SQLiteDatabase(BaseDatabase):
             qualres['data'].append(dict(epoch=int(row[1]), **json.loads(row[-1])))
 
         return qualres
+
+    def add_to_group(self, exp_id: str, group: str):
+        self.cursor.execute(self.COMMAND_ADD_TO_GROUP, (exp_id, group))
+        self.conn.commit()
+
+    def remove_from_group(self, exp_id: str, group: str):
+        self.cursor.execute(self.COMMAND_REMOVE_FROM_GROUP, (exp_id, group))
+        self.conn.commit()
+
+    def get_group(self, group: str):
+        self.cursor.execute(self.COMMAND_GET_GROUP, (group,))
+        expids = [r[0] for r in self.cursor.fetchall()]
+        return expids
+
+    def get_groups_of_exp(self, expid: str):
+        self.cursor.execute(self.COMMAND_GET_GROUPS_OF_EXP, (expid,))
+        groups = [r[0] for r in self.cursor.fetchall()]
+        return groups

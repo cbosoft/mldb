@@ -108,3 +108,15 @@ class BaseDatabase:
 
     def get_qualitative_result(self, exp_id: str, plot_id: str):
         raise NotImplementedError
+
+    def add_to_group(self, exp_id: str, group: str):
+        raise NotImplementedError
+
+    def remove_from_group(self, exp_id: str, group: str):
+        raise NotImplementedError
+
+    def get_group(self, group: str):
+        raise NotImplementedError
+
+    def get_groups_of_exp(self, expid: str):
+        raise NotImplementedError
