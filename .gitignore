@@ -5,3 +5,5 @@
 tests/*.db
 *.egg-info
 .DS_Store
+
+*trial*
