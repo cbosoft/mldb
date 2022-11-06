@@ -78,26 +78,26 @@ class ExpCompareDialog(QDialog):
 
         self.layout = QVBoxLayout(self)
 
-        self.plots = QTabWidget()
-        self.layout.addWidget(self.plots)
+        self.tabs = QTabWidget()
+        self.layout.addWidget(self.tabs)
 
         self.loss_plot = PlotWidget()
         self.loss_plot.axes.set_title('Loss v Epoch')
         self.loss_plot.axes.set_xscale('log')
         self.loss_plot.axes.set_yscale('log')
         self.loss_plot.axes.set_title('Loss v Epoch')
-        self.plots.addTab(self.loss_plot, 'Loss v Epoch')
+        self.tabs.addTab(self.loss_plot, 'Loss v Epoch')
 
         final_metrics_low_widget, self.final_metrics_low_plot, self.final_metrics_low_table, self.final_metrics_low_groups = plot_widget_and_table(grouping_table=True)
         self.low_metrics_grouping = {}
         self.final_metrics_low_groups: GroupTable
         self.final_metrics_low_groups.groups_changed.connect(self.low_grouping_changed)
         self.final_metrics_low_plot.axes.set_title('Metrics (lower is better)')
-        self.plots.addTab(final_metrics_low_widget, 'Final Metrics (errors)')
+        self.tabs.addTab(final_metrics_low_widget, 'Final Metrics (errors)')
 
         final_metrics_high_widget, self.final_metrics_high_plot, self.final_metrics_high_table = plot_widget_and_table()
         self.final_metrics_high_plot.axes.set_title('Metrics (higher is better)')
-        self.plots.addTab(final_metrics_high_widget, 'Final Metrics (correlations)')
+        self.tabs.addTab(final_metrics_high_widget, 'Final Metrics (correlations)')
 
         self.low_metrics = set()
         self.high_metrics = set()
