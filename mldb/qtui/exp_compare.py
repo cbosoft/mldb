@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from .plot_widget import PlotWidget
+from .exp_views import ExpLossAndLRView
 from .db_iop import DBExpDetails, DBExpMetrics
 
 
@@ -81,12 +82,7 @@ class ExpCompareDialog(QDialog):
         self.tabs = QTabWidget()
         self.layout.addWidget(self.tabs)
 
-        self.loss_plot = PlotWidget()
-        self.loss_plot.axes.set_title('Loss v Epoch')
-        self.loss_plot.axes.set_xscale('log')
-        self.loss_plot.axes.set_yscale('log')
-        self.loss_plot.axes.set_title('Loss v Epoch')
-        self.tabs.addTab(self.loss_plot, 'Loss v Epoch')
+        self.tabs.addTab(ExpLossAndLRView(*expids), 'Loss v Epoch')
 
         final_metrics_low_widget, self.final_metrics_low_plot, self.final_metrics_low_table, self.final_metrics_low_groups = plot_widget_and_table(grouping_table=True)
         self.low_metrics_grouping = {}
@@ -104,26 +100,7 @@ class ExpCompareDialog(QDialog):
         self.metrics_by_exp = {}
 
         for expid in expids:
-            DBExpDetails(expid, self.details_returned).start()
             DBExpMetrics(expid, self.metrics_returned).start()
-
-    def details_returned(self, d: dict):
-
-        expid = d['expid']
-        i = self.expids.index(expid)
-        colour = f'C{i}'
-
-        train_losses = d['losses']['train']['loss']
-        train_epochs = d['losses']['train']['epoch']
-        valid_losses = d['losses']['valid']['loss']
-        valid_epochs = d['losses']['valid']['epoch']
-        # self.loss_plot.clear()
-        self.loss_plot.plot(train_epochs, train_losses, ls='-', color=colour, label=expid)
-        self.loss_plot.plot(valid_epochs, valid_losses, ls=':', color=colour, alpha=0.5)
-        self.loss_plot.axes.set_xlabel('Epoch [#]')
-        self.loss_plot.axes.set_ylabel('Loss')
-        self.loss_plot.legend()
-        self.loss_plot.redraw_and_flush()
 
     def metrics_returned(self, d: dict):
 

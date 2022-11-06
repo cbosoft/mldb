@@ -7,8 +7,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QTextOption
 
 from .plot_widget import PlotWidget
-
-from .db_iop import DBQuery, DBExpDetails, DBExpMetrics, DBExpQualResults, DBExpHyperParams
+from .exp_views import ExpLossAndLRView
+from .db_iop import DBQuery, DBExpMetrics, DBExpQualResults, DBExpHyperParams
 
 
 def plot_widget_and_table():
@@ -45,14 +45,7 @@ class ExpViewDialog(QDialog):
         self.full_config.setWordWrapMode(QTextOption.NoWrap)
         self.tabs.addTab(self.full_config, 'config.yaml')
 
-        self.loss_plot = PlotWidget(ax_rect=(0.2, 0.2, 0.6, 0.7))
-        self.loss_plot.axes.set_title('Loss v Epoch')
-        self.loss_plot.axes.set_xscale('log')
-        self.loss_plot.axes.set_yscale('log')
-        self.loss_plot.axes.set_title('Loss v Epoch')
-        self.lr_ax = self.loss_plot.axes.twinx()
-        self.lr_ax.set_ylabel('Learning rate')
-        self.tabs.addTab(self.loss_plot, 'Loss v Epoch')
+        self.tabs.addTab(ExpLossAndLRView(expid), 'Loss v Epoch')
 
         self.final_metrics_low_widget, self.final_metrics_low_plot, self.final_metrics_low_table = plot_widget_and_table()
         self.final_metrics_low_plot.axes.set_title('Metrics (lower is better)')
@@ -73,7 +66,6 @@ class ExpViewDialog(QDialog):
         self.setWindowTitle(f'{expid} - Details')
 
         DBQuery(f'SELECT * FROM CONFIG WHERE EXPID=\'{self.expid}\';', self.config_returned).start()
-        DBExpDetails(self.expid, self.details_returned).start()
         DBExpMetrics(self.expid, self.metrics_returned).start()
         DBExpQualResults(self.expid, self.qualres_returned).start()
         DBExpHyperParams(self.expid, self.hparams_returned).start()
@@ -98,38 +90,6 @@ class ExpViewDialog(QDialog):
 
         t = f'# {path}\n{t}'
         self.full_config.setText(t)
-
-    def details_returned(self, d: dict):
-        self.loss_plot.clear()
-        self.exp_details.layout.addRow('Status', QLabel(d['status']))
-        print(d.keys())
-
-        try:
-            train_losses = d['losses']['train']['loss']
-            train_epochs = d['losses']['train']['epoch']
-            self.loss_plot.plot(train_epochs, train_losses, label='training')
-        except KeyError as e:
-            print(e)
-
-        try:
-            valid_losses = d['losses']['valid']['loss']
-            valid_epochs = d['losses']['valid']['epoch']
-            self.loss_plot.plot(valid_epochs, valid_losses, label='valid')
-        except KeyError as e:
-            print(e)
-
-        self.loss_plot.axes.set_xlabel('Epoch [#]')
-        self.loss_plot.axes.set_ylabel('Loss')
-
-        try:
-            lr_epochs = d['lrs']['epochs']
-            lrs = d['lrs']['lrs']
-            self.lr_ax.plot(lr_epochs, lrs, zorder=-10, color='k', ls='--')
-        except KeyError as e:
-            print(e)
-
-        self.loss_plot.legend()
-        self.loss_plot.redraw_and_flush()
 
     def metrics_returned(self, d: dict):
         low_metrics = {}
