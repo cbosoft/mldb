@@ -25,6 +25,7 @@ class PlotWidget(FigureCanvasQTAgg):
         fig = Figure(dpi=dpi)
         super().__init__(fig)
         self.axes: Axes = fig.add_axes(ax_rect)
+        self._twax = None
 
         self.selection_axes = [0, 0]
         self.selection_data = [0, 0]
@@ -34,6 +35,12 @@ class PlotWidget(FigureCanvasQTAgg):
         selector_kws = dict(color='k', alpha=0.1, transform=self.axes.transAxes)
         self.selection_left: PolyCollection = self.axes.fill_betweenx([-2., 2.], -2., -2., **selector_kws)
         self.selection_right: PolyCollection = self.axes.fill_betweenx([-2., 2.], 2., 2., **selector_kws)
+
+    @property
+    def twax(self):
+        if self._twax is None:
+            self._twax = self.axes.twinx()
+        return self._twax
 
     def plot(self, *args, **kwargs):
         rv = self.axes.plot(*args, **kwargs)
@@ -48,9 +55,18 @@ class PlotWidget(FigureCanvasQTAgg):
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
-    def clear(self):
+    def clear_axes(self):
         for a in self.axes.get_lines():
             a.remove()
+
+    def clear_twax(self):
+        if self._twax:
+            for a in self._twax.get_lines():
+                a.remove()
+
+    def clear(self):
+        self.clear_axes()
+        self.clear_twax()
 
     def convert_pt(self, pt: QtCore.QPoint):
         w, h = self.get_width_height()
