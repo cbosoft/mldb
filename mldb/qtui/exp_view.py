@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QTextOption
 
 from .plot_widget import PlotWidget
-from .exp_views import ExpLossAndLRView
+from .exp_views import ExpLossAndLRView, ExpConfigView
 from .db_iop import DBQuery, DBExpMetrics, DBExpQualResults, DBExpHyperParams
 
 
@@ -39,12 +39,7 @@ class ExpViewDialog(QDialog):
         self.exp_details.layout.addRow('Exp. ID', QLabel(expid))
         self.tabs.addTab(self.exp_details, 'Details')
 
-        self.full_config = QTextEdit()
-        self.full_config.setReadOnly(True)
-        self.full_config.setFont('Monaco')  # TODO: monaco on macos, consolas on windows
-        self.full_config.setWordWrapMode(QTextOption.NoWrap)
-        self.tabs.addTab(self.full_config, 'config.yaml')
-
+        self.tabs.addTab(ExpConfigView(expid), 'Config')
         self.tabs.addTab(ExpLossAndLRView(expid), 'Loss v Epoch')
 
         self.final_metrics_low_widget, self.final_metrics_low_plot, self.final_metrics_low_table = plot_widget_and_table()
@@ -65,31 +60,9 @@ class ExpViewDialog(QDialog):
 
         self.setWindowTitle(f'{expid} - Details')
 
-        DBQuery(f'SELECT * FROM CONFIG WHERE EXPID=\'{self.expid}\';', self.config_returned).start()
         DBExpMetrics(self.expid, self.metrics_returned).start()
         DBExpQualResults(self.expid, self.qualres_returned).start()
         DBExpHyperParams(self.expid, self.hparams_returned).start()
-
-    def config_returned(self, v):
-        _, path = v[0]
-        hacky_translation = {
-            '../../../../../../media/raid/cboyle/mdpc/cld2psd/training_results':
-                '/Volumes/idrive/Science/SIPBS/cmac/Christopher Boyle/Runs/CLD2PSD',
-            '../../../../../../media/raid/cboyle/mdpc/PSDCR/training_results':
-                '/Volumes/idrive/Science/SIPBS/cmac/Christopher Boyle/Runs/CLD2QC',
-            '../../../../../../media/raid/cboyle/mdpc/mask_rcnn/training_results':
-                '/Volumes/idrive/Science/SIPBS/cmac/Christopher Boyle/Runs/Mask_RCNN',
-            '../../../../../../media/raid/cboyle/mdpc/CLD2QC/training_results':
-                '/Volumes/idrive/Science/SIPBS/cmac/Christopher Boyle/Runs/CLD2QC',
-        }
-        for k, v in hacky_translation.items():
-            path = path.replace(k, v)
-
-        with open(path) as f:
-            t = f.read()
-
-        t = f'# {path}\n{t}'
-        self.full_config.setText(t)
 
     def metrics_returned(self, d: dict):
         low_metrics = {}

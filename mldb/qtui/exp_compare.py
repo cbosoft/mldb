@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from .plot_widget import PlotWidget
-from .exp_views import ExpLossAndLRView
+from .exp_views import ExpLossAndLRView, ExpConfigView
 from .db_iop import DBExpDetails, DBExpMetrics
 
 
@@ -82,6 +82,7 @@ class ExpCompareDialog(QDialog):
         self.tabs = QTabWidget()
         self.layout.addWidget(self.tabs)
 
+        self.tabs.addTab(ExpConfigView(*expids), 'Config')
         self.tabs.addTab(ExpLossAndLRView(*expids), 'Loss v Epoch')
 
         final_metrics_low_widget, self.final_metrics_low_plot, self.final_metrics_low_table, self.final_metrics_low_groups = plot_widget_and_table(grouping_table=True)
