@@ -120,3 +120,6 @@ class BaseDatabase:
 
     def get_groups_of_exp(self, expid: str):
         raise NotImplementedError
+
+    def delete_experiment(self, exp_id: str):
+        raise NotImplementedError

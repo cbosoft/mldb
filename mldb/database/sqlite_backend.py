@@ -32,6 +32,12 @@ class SQLiteDatabase(BaseDatabase):
     COMMAND_REMOVE_FROM_GROUP = 'DELETE FROM EXPGROUPS WHERE EXPID=? AND GROUPNAME=?;'
     COMMAND_GET_GROUP = 'SELECT EXPID FROM EXPGROUPS WHERE GROUPNAME=?;'
     COMMAND_GET_GROUPS_OF_EXP = 'SELECT GROUPNAME FROM EXPGROUPS WHERE EXPID=?;'
+    COMMAND_DELETE_EXPERIMENT = 'DELETE FROM ? WHERE EXPID=?;'
+
+    TABLES = (
+        'STATUS', 'CONFIG', 'METRICS', 'STATE', 'HYPERPARAMS', 'LEARNINGRATE', 'QUALITATIVERESULTS',
+        'QUALITATIVERESULTSMETA', 'EXPGROUPS'
+    )
 
     def __init__(self, root_dir=None):
         super().__init__(os.path.dirname(CONFIG.db_path) if root_dir is None else root_dir)
@@ -248,3 +254,8 @@ class SQLiteDatabase(BaseDatabase):
         self.cursor.execute(self.COMMAND_GET_GROUPS_OF_EXP, (expid,))
         groups = [r[0] for r in self.cursor.fetchall()]
         return groups
+
+    def delete_experiment(self, exp_id: str):
+        for table in self.TABLES:
+            self.cursor.execute(self.COMMAND_DELETE_EXPERIMENT, (table, exp_id))
+        self.conn.commit()
