@@ -1,11 +1,14 @@
 from typing import List
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QComboBox, QTableWidget, QTableWidgetItem, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QTableWidget, QTableWidgetItem, QPushButton
 from PySide6.QtCore import Signal
 
-from .db_iop import DBQuery
+from mldb import Database
+
+from .db_iop import DBQuery, DBMethod
 from .exp_view import ExpViewDialog
 from .exp_compare import ExpCompareDialog
+from .edit_groups import GroupEditDialog
 
 
 class ExperimentListWidget(QWidget):
@@ -41,14 +44,29 @@ class ExperimentListWidget(QWidget):
         self.table_experiments.setSelectionBehavior(QTableWidget.SelectRows)
         self.table_experiments.itemSelectionChanged.connect(self.exp_selection_changed)
 
+        btn_box = QWidget()
+        btn_box.layout = QHBoxLayout(btn_box)
         self.view_button = QPushButton()
-        self.layout.addWidget(self.view_button)
+        self.delete_button = QPushButton('Delete Exp')
+        self.group_button = QPushButton('Group')
+        self.group_button.clicked.connect(self.edit_groups)
+        btn_box.layout.addWidget(self.view_button)
+        btn_box.layout.addWidget(self.delete_button)
+        btn_box.layout.addWidget(self.group_button)
+        self.layout.addWidget(btn_box)
         self.view_button.clicked.connect(self.view_or_compare_exp)
 
         self.query_changed(0)
         self.exp_selection_changed()
+        DBQuery('SELECT GROUPNAME FROM EXPGROUPS;', self.populate_groups).start()
 
         self.models = None
+
+    def edit_groups(self):
+        selection = self.table_experiments.selectedIndexes()
+        expids = [i.data() for i in selection if i.column() == 0]
+        dia = GroupEditDialog(self, expids)
+        dia.show()
 
     def get_selected_experiments(self) -> List[str]:
         selection = self.table_experiments.selectedIndexes()
@@ -63,9 +81,13 @@ class ExperimentListWidget(QWidget):
             else:
                 ttl = 'View experiment'
             self.view_button.setEnabled(True)
+            self.group_button.setEnabled(True)
+            self.delete_button.setEnabled(True)
         else:
             ttl = 'No experiment selected'
             self.view_button.setEnabled(False)
+            self.group_button.setEnabled(False)
+            self.delete_button.setEnabled(False)
         self.view_button.setText(ttl)
 
     def view_or_compare_exp(self):
@@ -122,6 +144,12 @@ class ExperimentListWidget(QWidget):
             self.query_selector.addItem(
                 f'Model {model}',
                 userData=f'SELECT * FROM STATUS WHERE EXPID LIKE \'%%{model}%%\'')
+
+    def populate_groups(self, groups):
+        for group, *_ in set(groups):
+            self.query_selector.addItem(
+                f'Group {group}',
+                userData=f'SELECT STATUS.EXPID, STATUS.STATUS FROM STATUS INNER JOIN EXPGROUPS ON STATUS.EXPID = EXPGROUPS.EXPID WHERE GROUPNAME=\'{group}\';')
 
     def set_status(self, s: str):
         self.status_signal.emit(s)
