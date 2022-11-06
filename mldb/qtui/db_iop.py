@@ -161,3 +161,32 @@ class _DBExpHyperParamsWorker(QRunnable):
 
     def start(self):
         QThreadPool.globalInstance().start(self)
+
+
+class DBMethod(QObject):
+
+    results_returned = Signal(list)
+
+    def __init__(self, method, *args, slot=None):
+        super().__init__()
+        print(method, args)
+        self.query = _DBMethodWorker(method, args, lambda rows: self.results_returned.emit(rows))
+        if slot:
+            self.results_returned.connect(slot)
+
+    def start(self):
+        self.query.run()
+
+
+class _DBMethodWorker(QRunnable):
+
+    def __init__(self, method, args, cb):
+        super().__init__()
+        self.method = method
+        self.args = args
+        self.cb = cb
+
+    def run(self):
+        print('running method')
+        with Database() as db:
+            self.cb(self.method(db, *self.args))
