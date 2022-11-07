@@ -71,20 +71,27 @@ class ExpLossAndLRView(BaseExpView):
 
     def update_plots(self, expid, t_e, t_l, v_e, v_l, lr_e, lr_v):
 
-        t_l = np.log10(t_l)
-        v_l = np.log10(v_l)
+        if self.i > 0:
+            self.loss_ax.axhline(self.i, color='k', alpha=0.2)
 
-        mx = max(np.max(t_l), np.max(v_l))
-        mn = min(np.min(t_l), np.min(v_l))
+        lt_l = np.log10(t_l)
+        lv_l = np.log10(v_l)
+
+        mx = max(np.max(lt_l), np.max(lv_l))
+        mn = min(np.min(lt_l), np.min(lv_l))
 
         def scale(v):
             return (v - mn) / (mx - mn)
 
         if t_l is not None:
-            self.loss_ax.plot(t_e, scale(t_l) + self.i, 'C0')
+            slt_l = scale(lt_l)
+            self.loss_ax.plot(t_e, slt_l + self.i, 'C0')
+            self.loss_ax.text(t_e[-1], slt_l[-1] + self.i + 0.1, f'{t_l[-1]:.2e}', ha='right', va='bottom', color='C0')
 
         if v_l is not None:
-            self.loss_ax.plot(v_e, scale(v_l) + self.i, 'C1')
+            slv_l = scale(lv_l)
+            self.loss_ax.plot(v_e, slv_l + self.i, 'C1')
+            self.loss_ax.text(t_e[-1], slv_l[-1] + self.i + 0.1, f'{v_l[-1]:.2e}', ha='right', va='bottom', color='C1')
 
         if lr_v is not None:
             self.lr_ax.plot(lr_e, np.divide(lr_v, np.max(lr_v)) + self.i, zorder=-10, color='k', ls='--')
