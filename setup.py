@@ -10,7 +10,7 @@ setup(
     install_requires=['wheel'],
     requires=['numpy', 'matplotlib', 'psycopg2', 'simplejson'],
     extras_require=dict(
-        test='pytest',
+        test=['pytest', 'torch'],
         qtui='PySide6'
     )
 )
