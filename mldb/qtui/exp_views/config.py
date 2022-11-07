@@ -41,7 +41,7 @@ class ExpConfigView(BaseExpView):
             ).start()
 
     def config_returned(self, expid_and_path):
-        expid, path = expid_and_path
+        expid, path = expid_and_path[0]
 
         # TODO translate path
 
