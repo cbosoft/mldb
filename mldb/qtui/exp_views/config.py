@@ -7,7 +7,7 @@ from .view_base import BaseExpView
 
 class ExpConfigView(BaseExpView):
 
-    QUERY = 'SELECT * FROM CONFIG WHERE EXPID=\'{expid}\';'
+    QUERY = 'SELECT * FROM CONFIG WHERE EXPID=\'{0}\';'
 
     def __init__(self, *expids: str):
         super().__init__(*expids)
