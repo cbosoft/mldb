@@ -74,11 +74,16 @@ class ExpLossAndLRView(BaseExpView):
         if self.i > 0:
             self.loss_ax.axhline(self.i, color='k', alpha=0.2)
 
-        lt_l = np.log10(t_l)
-        lv_l = np.log10(v_l)
+        mx, mn = -100, 100
+        if t_l is not None:
+            lt_l = np.log10(t_l)
+            mx = lt_l.max()
+            mn = lt_l.min()
 
-        mx = max(np.max(lt_l), np.max(lv_l))
-        mn = min(np.min(lt_l), np.min(lv_l))
+        if v_l is not None:
+            lv_l = np.log10(v_l)
+            mx = max(mx, lv_l.max())
+            mn = min(mn, lv_l.min())
 
         def scale(v):
             return (v - mn) / (mx - mn)
