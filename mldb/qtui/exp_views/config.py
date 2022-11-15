@@ -1,6 +1,9 @@
+import os.path
+
 from PySide6.QtWidgets import QTextEdit, QTabWidget, QHBoxLayout
 from PySide6.QtGui import QTextOption
 
+from ...config import CONFIG
 from ..db_iop import DBQuery
 from .view_base import BaseExpView
 
@@ -43,9 +46,9 @@ class ExpConfigView(BaseExpView):
     def config_returned(self, expid_and_path):
         expid, path = expid_and_path[0]
 
-        # TODO translate path
+        full_path = os.path.join(CONFIG.root_dir, path)
 
-        with open(path) as f:
+        with open(full_path) as f:
             t = f.read()
 
         t = f'# {path}\n' + t
