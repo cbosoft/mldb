@@ -1,3 +1,5 @@
+from typing import List
+
 from PySide6.QtWidgets import (
     QDialog, QWidget, QHBoxLayout,
     QVBoxLayout, QListWidget, QListWidgetItem, QPushButton, QLineEdit, QLabel
@@ -10,13 +12,15 @@ from .db_iop import DBMethod
 
 class GroupEditDialog(QDialog):
 
-    def __init__(self, parent: QWidget, expids: str):
+    def __init__(self, parent: QWidget, expids: List[str]):
         super().__init__(parent)
 
-        self.expid = expids[0]  # TODO: support multiple exps at once
+        self.expids = expids  # TODO: support multiple exps at once
+        self.groupset = None
+        self.i = -1
 
         self.layout = QVBoxLayout(self)
-        self.layout.addWidget(QLabel(self.expid))
+        self.layout.addWidget(QLabel(', '.join(self.expids)))
 
         hb = QWidget()
         hb.layout = QHBoxLayout(hb)
@@ -37,16 +41,27 @@ class GroupEditDialog(QDialog):
         self.refresh_group_list()
 
     def refresh_group_list(self, *_, **__):
-        DBMethod(lambda db, e: db.get_groups_of_exp(e), self.expid, slot=self.groups_returned).start()
+        self.groupset = None
+        self.i = len(self.expids)
+        for expid in self.expids:
+            DBMethod(lambda db, e: db.get_groups_of_exp(e), expid, slot=self.groups_returned).start()
 
     def groups_returned(self, groups):
-        self.group_list.clear()
-        for group in groups:
-            self.group_list.addItem(QListWidgetItem(group))
+        if self.groupset is None:
+            self.groupset = set(groups)
+        else:
+            self.groupset = self.groupset.intersection(groups)
+
+        self.i -= 1
+        if self.i < 1:
+            self.group_list.clear()
+            for group in self.groupset:
+                self.group_list.addItem(QListWidgetItem(group))
 
     def add_group(self):
         group = self.txt_new_group.text()
-        DBMethod(lambda db, e, g: db.add_to_group(e, g), self.expid, group, slot=self.refresh_group_list).start()
+        for expid in self.expids:
+            DBMethod(lambda db, e, g: db.add_to_group(e, g), expid, group, slot=self.refresh_group_list).start()
 
     def rem_group(self):
         selection = self.group_list.currentItem().text()
