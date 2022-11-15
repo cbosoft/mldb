@@ -34,11 +34,11 @@ class ExperimentListWidget(QWidget):
 
         self.table_experiments = QTableWidget()
         self.layout.addWidget(self.table_experiments)
-        cols = ['Exp. ID', 'Status']
+        cols = ['Exp. ID', 'Status', 'Groups']
         self.table_experiments.setColumnCount(len(cols))
         self.table_experiments.setHorizontalHeaderLabels(cols)
-        self.table_experiments.horizontalHeader().setStretchLastSection(True)
-        self.table_experiments.horizontalHeader().setDefaultSectionSize(400)
+        # self.table_experiments.horizontalHeader().section(True)
+        # self.table_experiments.horizontalHeader().setDefaultSectionSize(400)
         self.table_experiments.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table_experiments.doubleClicked.connect(self.view_or_compare_exp)
         self.table_experiments.setSelectionBehavior(QTableWidget.SelectRows)
@@ -129,6 +129,25 @@ class ExperimentListWidget(QWidget):
             # No model cache, likely this is the first call
             # so this is the all exp query and can use it to populate models
             self.populate_models([e for e, _ in rows])
+            self.refresh_groups()
+
+    def refresh_groups(self):
+        DBQuery('SELECT * FROM EXPGROUPS;', self.display_groups).start()
+
+    def display_groups(self, rv):
+        groups_by_exp = {}
+        for e, g in rv:
+            if e not in groups_by_exp:
+                groups_by_exp[e] = []
+            groups_by_exp[e].append(g)
+
+        for i in range(self.table_experiments.rowCount()):
+            e = self.table_experiments.item(i, 0).text()
+            if e in groups_by_exp:
+                groups = ', '.join(groups_by_exp[e])
+            else:
+                groups = ''
+            self.table_experiments.setItem(i, 2, QTableWidgetItem(groups))
 
     def populate_models(self, expids):
         assert self.models is None
