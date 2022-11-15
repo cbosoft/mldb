@@ -64,6 +64,6 @@ class GroupEditDialog(QDialog):
             DBMethod(lambda db, e, g: db.add_to_group(e, g), expid, group, slot=self.refresh_group_list).start()
 
     def rem_group(self):
-        selection = self.group_list.currentItem().text()
-        print(selection)
-        # DBMethod(lambda db, g: db.remove_from_group(e, g), self.expid, selection, slot=self.refresh_group_list)
+        selected_group = self.group_list.currentItem().text()
+        for expid in self.expids:
+            DBMethod(lambda db, e, g: db.remove_from_group(e, g), expid, selected_group, slot=self.refresh_group_list).start()
