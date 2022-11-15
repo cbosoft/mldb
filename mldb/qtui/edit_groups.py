@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QDialog, QWidget, QHBoxLayout,
     QVBoxLayout, QListWidget, QListWidgetItem, QPushButton, QLineEdit, QLabel
 )
+from PySide6.QtCore import Signal
 
 from mldb import Database
 
@@ -11,6 +12,8 @@ from .db_iop import DBMethod
 
 
 class GroupEditDialog(QDialog):
+
+    groups_changed = Signal()
 
     def __init__(self, parent: QWidget, expids: List[str]):
         super().__init__(parent)
@@ -57,6 +60,7 @@ class GroupEditDialog(QDialog):
             self.group_list.clear()
             for group in self.groupset:
                 self.group_list.addItem(QListWidgetItem(group))
+            self.groups_changed.emit()
 
     def add_group(self):
         group = self.txt_new_group.text()

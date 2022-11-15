@@ -66,6 +66,7 @@ class ExperimentListWidget(QWidget):
         selection = self.table_experiments.selectedIndexes()
         expids = [i.data() for i in selection if i.column() == 0]
         dia = GroupEditDialog(self, expids)
+        dia.groups_changed.connect(self.refresh_groups)
         dia.show()
 
     def get_selected_experiments(self) -> List[str]:
