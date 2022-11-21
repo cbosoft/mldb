@@ -37,6 +37,7 @@ class ExpConfigView(BaseExpView):
         # TODO: monaco on macos, consolas on windows
         txt.setFont('Monaco')
         txt.setWordWrapMode(QTextOption.NoWrap)
+        txt.setText('<loading...>')
         return txt
 
     def refresh(self):
@@ -51,8 +52,11 @@ class ExpConfigView(BaseExpView):
 
         full_path = os.path.join(CONFIG.root_dir, path)
 
-        with open(full_path) as f:
-            t = f.read()
+        try:
+            with open(full_path) as f:
+                t = f.read()
+            t = f'# {path}\n' + t
+        except IOError as e:
+            t = f'Could not read config for experiment {expid}.\n{e}'
 
-        t = f'# {path}\n' + t
         self.txt_boxes_by_id[expid].setText(t)
