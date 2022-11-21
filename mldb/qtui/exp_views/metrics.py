@@ -42,7 +42,9 @@ class MetricsView(BaseExpView):
             ).start()
 
     def metrics_returned(self, d):
-        print(d)
+        if not d:
+            self.readiness += 1
+            return
 
         expid = d['expid']
 
@@ -59,12 +61,14 @@ class MetricsView(BaseExpView):
         DBQuery(self.GROUP_QUERY.format(expid), self.grouping_returned).start()
 
     def grouping_returned(self, rows):
-        print(rows)
+        try:
+            expid = rows[0][0]
+            groups = [row[1] for row in rows]
 
-        expid = rows[0][0]
-        groups = [row[1] for row in rows]
+            self.groupings_by_exp[expid] = groups
+        except Exception as e:
+            print(e)
 
-        self.groupings_by_exp[expid] = groups
         self.readiness += 1
 
         if self.readiness >= 0:
@@ -82,7 +86,8 @@ class MetricsView(BaseExpView):
 
             if not ng:
                 print(f'no groups for {exp}')
-                self.exps_by_group[exp].append(exp)
+                if not self.groupings_by_exp:
+                    self.exps_by_group[exp].append(exp)
             else:
                 if ng > 1:
                     print(f'experiment {exp} has many groups; choosing first ({groups[0]})')
