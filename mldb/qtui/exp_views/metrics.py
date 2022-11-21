@@ -131,5 +131,6 @@ class MetricsView(BaseExpView):
         plot_widget.axes.set_xticks(
             lbl_x, labels,
         )
+        plot_widget.legend()
         plot_widget.axes.set_yscale('log')
         plot_widget.redraw_and_flush()
