@@ -1,55 +1,101 @@
-from sqlite3 import connect
 import os
 import json
 
-from ..config import CONFIG, SQLiteConfig
-from .base import BaseDatabase
+import numpy as np
+from psycopg2 import connect
+
+from ..config import CONFIG
 
 
-CONFIG: SQLiteConfig
+class Database:
 
-
-class SQLiteDatabase(BaseDatabase):
-
-    COMMAND_SET_STATUS = 'INSERT INTO STATUS (EXPID, STATUS) VALUES (?, ?) ON CONFLICT (EXPID) DO UPDATE SET STATUS=excluded.STATUS;'
-    COMMAND_GET_STATUS = 'SELECT * FROM STATUS WHERE EXPID=?;'
-    COMMAND_ADD_LOSS = 'INSERT INTO LOSS (EXPID, KIND, EPOCH, VALUE) VALUES (?, ?, ?, ?)'
-    COMMAND_GET_LOSSES = 'SELECT * FROM LOSS WHERE EXPID=?;'
-    COMMAND_ADD_HYPERPARAM = 'INSERT INTO HYPERPARAMS (EXPID, NAME, VALUE) VALUES (?, ?, ?)'
-    COMMAND_GET_HYPERPARAMS = 'SELECT * FROM HYPERPARAMS WHERE EXPID=?;'
-    COMMAND_ADD_METRICS = 'INSERT INTO METRICS (EXPID, KIND, EPOCH, VALUE) VALUES (?, ?, ?, ?);'
-    COMMAND_GET_LATEST_METRICS = 'SELECT * FROM METRICS WHERE (EXPID, EPOCH) IN (SELECT EXPID, max(EPOCH) FROM METRICS WHERE EXPID=? GROUP BY EXPID);'
-    COMMAND_SET_CONFIG = 'INSERT INTO CONFIG (EXPID, CONFIG) VALUES (?, ?);'
-    COMMAND_ADD_STATE = 'INSERT INTO STATE (EXPID, EPOCH, PATH) VALUES (?, ?, ?);'
-    COMMAND_GET_STATE = 'SELECT PATH FROM STATE WHERE EXPID=? AND EPOCH=?;'
-    COMMAND_ADD_LR = 'INSERT INTO LEARNINGRATE (EXPID, EPOCH, VALUE) VALUES (?, ?, ?)'
-    COMMAND_GET_LRS = 'SELECT (EPOCH, VALUE) FROM LEARNINGRATE WHERE EXPID=? ORDER BY EPOCH;'
-    COMMAND_ADD_QUALRESMETA = 'INSERT INTO QUALITATIVERESULTSMETA (EXPID, PLOTID, VALUE) VALUES (?, ?, ?)'
-    COMMAND_ADD_QUALRES = 'INSERT INTO QUALITATIVERESULTS (EXPID, EPOCH, PLOTID, VALUE) VALUES (?, ?, ?, ?)'
-    COMMAND_GET_QUALRES = 'SELECT * FROM QUALITATIVERESULTS WHERE EXPID=? AND PLOTID=? ORDER BY EPOCH ASC;'
-    COMMAND_GET_QUALRESMETA = 'SELECT * FROM QUALITATIVERESULTSMETA WHERE EXPID=? AND PLOTID=?;'
-    COMMAND_ADD_TO_GROUP = 'INSERT INTO EXPGROUPS (EXPID, GROUPNAME) VALUES (?, ?);'
-    COMMAND_REMOVE_FROM_GROUP = 'DELETE FROM EXPGROUPS WHERE EXPID=? AND GROUPNAME=?;'
-    COMMAND_GET_GROUP = 'SELECT EXPID FROM EXPGROUPS WHERE GROUPNAME=?;'
-    COMMAND_GET_GROUPS_OF_EXP = 'SELECT GROUPNAME FROM EXPGROUPS WHERE EXPID=?;'
-    COMMAND_DELETE_EXPERIMENT = 'DELETE FROM ? WHERE EXPID=?;'
+    COMMAND_SET_STATUS = 'INSERT INTO STATUS (EXPID, STATUS) VALUES (%s, %s) ON CONFLICT (EXPID) DO UPDATE SET STATUS=excluded.STATUS;'
+    COMMAND_GET_STATUS = 'SELECT * FROM STATUS WHERE EXPID=%s;'
+    COMMAND_ADD_LOSS = 'INSERT INTO LOSS (EXPID, KIND, EPOCH, VALUE) VALUES (%s, %s, %s, %s)'
+    COMMAND_GET_LOSSES = 'SELECT * FROM LOSS WHERE EXPID=%s;'
+    COMMAND_ADD_HYPERPARAM = 'INSERT INTO HYPERPARAMS (EXPID, NAME, VALUE) VALUES (%s, %s, %s)'
+    COMMAND_GET_HYPERPARAMS = 'SELECT * FROM HYPERPARAMS WHERE EXPID=%s;'
+    COMMAND_ADD_METRICS = 'INSERT INTO METRICS (EXPID, KIND, EPOCH, VALUE) VALUES (%s, %s, %s, %s);'
+    COMMAND_GET_LATEST_METRICS = 'SELECT * FROM METRICS WHERE (EXPID, EPOCH) IN (SELECT EXPID, max(EPOCH) FROM METRICS WHERE EXPID=%s GROUP BY EXPID);'
+    COMMAND_SET_CONFIG = 'INSERT INTO CONFIG (EXPID, CONFIG) VALUES (%s, %s);'
+    COMMAND_ADD_STATE = 'INSERT INTO STATE (EXPID, EPOCH, PATH) VALUES (%s, %s, %s);'
+    COMMAND_GET_STATE = 'SELECT PATH FROM STATE WHERE EXPID=? AND EPOCH=%s;'
+    COMMAND_GET_EXPERIMENT_DETAILS = 'SELECT * FROM STATUS INNER JOIN LOSS ON status.expid=loss.expid WHERE status.expid=%s;'
+    COMMAND_ADD_LR = 'INSERT INTO LEARNINGRATE (EXPID, EPOCH, VALUE) VALUES (%s, %s, %s)'
+    COMMAND_GET_LRS = 'SELECT (EPOCH, VALUE) FROM LEARNINGRATE WHERE EXPID=%s ORDER BY EPOCH;'
+    COMMAND_ADD_QUALRESMETA = 'INSERT INTO QUALITATIVERESULTSMETA (EXPID, PLOTID, VALUE) VALUES (%s, %s, %s)'
+    COMMAND_ADD_QUALRES = 'INSERT INTO QUALITATIVERESULTS (EXPID, EPOCH, PLOTID, VALUE) VALUES (%s, %s, %s, %s)'
+    COMMAND_GET_QUALRES = 'SELECT * FROM QUALITATIVERESULTS WHERE EXPID=%s AND PLOTID=%s;'
+    COMMAND_GET_QUALRESMETA = 'SELECT * FROM QUALITATIVERESULTSMETA WHERE EXPID=%s AND PLOTID=%s;'
+    COMMAND_ADD_TO_GROUP = 'INSERT INTO EXPGROUPS (EXPID, GROUPNAME) VALUES (%s, %s);'
+    COMMAND_REMOVE_FROM_GROUP = 'DELETE FROM EXPGROUPS WHERE EXPID=%s AND GROUPNAME=%s;'
+    COMMAND_GET_GROUP = 'SELECT EXPID FROM EXPGROUPS WHERE GROUPNAME=%s;'
+    COMMAND_GET_GROUPS_OF_EXP = 'SELECT GROUPNAME FROM EXPGROUPS WHERE EXPID=%s;'
+    COMMAND_DELETE_EXPERIMENT = 'DELETE FROM %s WHERE EXPID=%s;'
 
     TABLES = (
         'STATUS', 'CONFIG', 'METRICS', 'STATE', 'HYPERPARAMS', 'LEARNINGRATE', 'QUALITATIVERESULTS',
         'QUALITATIVERESULTSMETA', 'EXPGROUPS'
     )
 
-    def __init__(self, root_dir=None):
-        super().__init__(os.path.dirname(CONFIG.db_path) if root_dir is None else root_dir)
+    def __init__(self):
+        self.root_dir = CONFIG.root_dir
+        self.host = CONFIG.host
+        self.user = CONFIG.user
+        self.port = CONFIG.port
+        self.database = CONFIG.database
         self.conn = self.cursor = None
         self.connect()
         self.ensure_schema()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def __repr__(self):
-        return f'SQLite://{CONFIG.db_path}'
+        return f'PostgreSQL://{self.user}@{self.host}:{self.port}/{self.database}'
+
+    def sanitise_path(self, path: str) -> str:
+        return os.path.relpath(path, self.root_dir)
+
+    def desanitise_path(self, sanitised_path: str) -> str:
+        return os.path.join(self.root_dir, sanitised_path)
+
+    @classmethod
+    def sanitise_value(cls, v):
+        if isinstance(v, (str, int, float)):
+            return v
+        elif hasattr(v, 'detach') and hasattr(v, 'cpu') and hasattr(v, 'numpy'):
+            return cls.sanitise_value(v.detach().cpu().numpy())
+        elif isinstance(v, (np.float16, np.float32, np.float64)):
+            return float(v)
+        elif isinstance(v, (np.int8, np.int16, np.int32, np.int64,
+                            np.uint8, np.uint16, np.uint32, np.uint64)):
+            return int(v)
+        elif hasattr(v, '__iter__'):
+            return [cls.sanitise_value(vi) for vi in v]
+        else:
+            raise ValueError(f'Unexpected type encountered: {type(v)}.')
+
+    def add_qualitative_result(self, exp_id: str, epoch: int, plot_id: str, output, target=None, **extra):
+        data = dict(
+            output=self.sanitise_value(output),
+            **extra
+        )
+        if target is not None:
+            data['target'] = self.sanitise_value(target)
+
+        self.add_qualitative_result_json(
+            exp_id,
+            epoch,
+            plot_id,
+            json.dumps(data)
+        )
 
     def connect(self):
-        self.conn = connect(CONFIG.db_path)
+        self.conn = connect(**CONFIG.as_dict())
         self.cursor = self.conn.cursor()
 
     def ensure_schema(self):
@@ -220,6 +266,9 @@ class SQLiteDatabase(BaseDatabase):
     def add_qualitative_result_json(self, exp_id: str, epoch: int, plot_id: str, value: str):
         self.cursor.execute(self.COMMAND_ADD_QUALRES, (exp_id, epoch, plot_id, value))
         self.conn.commit()
+
+    def add_qualitative_metadata(self, exp_id: str, plot_id: str, kind: str, **meta_data):
+        self.add_qualitative_metadata_json(exp_id, plot_id, json.dumps(dict(kind=kind, **meta_data)))
 
     def get_qualitative_result(self, exp_id: str, plot_id: str):
         self.cursor.execute(self.COMMAND_GET_QUALRESMETA, (exp_id, plot_id))

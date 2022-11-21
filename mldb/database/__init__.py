@@ -1,1 +1,1 @@
-from .metaclass import Database
+from .database import Database

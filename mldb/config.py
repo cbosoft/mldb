@@ -2,17 +2,6 @@ import json
 import os
 
 
-class SQLiteConfig:
-
-    backend = 'sqlite'
-
-    def __init__(self, db_path: str):
-        self.db_path = db_path
-
-    def as_dict(self):
-        return dict(db_path=self.db_path)
-
-
 class PostgreSQLConfig:
 
     backend = 'postgresql'
@@ -34,28 +23,6 @@ class PostgreSQLConfig:
             port=self.port
         )
 
-
-class _Config:
-
-    def __init__(self, *_, **__):
-        """
-        This constructor is never called.
-        Meta class returns one of the above backend-specific
-        config classes instead.
-        """
-        pass
-
-    def __new__(cls, *, backend, **kwargs):
-        if backend == 'sqlite':
-            assert 'sqlite' in kwargs
-            config = SQLiteConfig(**kwargs['sqlite'])
-        elif backend == 'postgresql':
-            assert 'postgresql' in kwargs
-            config = PostgreSQLConfig(**kwargs['postgresql'])
-        else:
-            raise ValueError(f'Unknown backend {backend}')
-        return config
-
     @classmethod
     def load(cls):
         config_name = '.mldb_config.json'
@@ -65,7 +32,12 @@ class _Config:
         with open(config_path) as f:
             config_data = json.load(f)
 
+        if 'backend' in config_data:
+            assert config_data['backend'] == 'postgresql', \
+                'Only postgresql backed is supported. SQLite support has been removed.'
+            config_data = config_data['postgresql']
+
         return cls(**config_data)
 
 
-CONFIG = _Config.load()
+CONFIG = PostgreSQLConfig.load()

@@ -1,6 +1,6 @@
 # MLDB
 
-A machine learning model database facilitator: SQLite database + python convenience.
+A machine learning model database facilitator: PostgreSQL database + python convenience.
 
 mldb helps maintain a databse of model stats while they are training, as well as a record of trained model weights (during and) after training has completed.
 
@@ -15,7 +15,11 @@ The database configuration is specified in JSON in your home directory. If this 
 `$HOME/.mldb_config.json` or, if you're on Windows, `$HOME\mldb_config.json`
 ```json
 {
-  "db_path": "/path/to/database.db"
+  "host": "postgresql.server.com",
+  "user": "foo",
+  "password": "bar",
+  "database": "Runs",
+  "port": 5432
 }
 ```
 
