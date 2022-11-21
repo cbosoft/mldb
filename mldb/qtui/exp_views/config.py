@@ -13,6 +13,9 @@ class ExpConfigView(BaseExpView):
     QUERY = 'SELECT * FROM CONFIG WHERE EXPID=\'{0}\';'
 
     def __init__(self, *expids: str):
+        if len(expids) > 3:
+            expids = expids[:3]
+            print('Too many experiments selected: only showing config of first three.')
         super().__init__(*expids)
         self.layout = QHBoxLayout(self)
 
