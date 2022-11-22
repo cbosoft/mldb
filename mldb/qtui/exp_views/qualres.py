@@ -35,8 +35,8 @@ class ExpQualresView(BaseExpView):
         else:
             raise NotImplementedError(f'plot kind not yet supported: "{kind}"')
 
-    def plot_vector(self,
-                    plot: PlotWidget, *,
+    @staticmethod
+    def plot_vector(plot: PlotWidget, *,
                     xlabel: str, ylabel: str, xscale='linear', yscale='linear',
                     data: list):
         plot.axes.set_xlabel(xlabel)
