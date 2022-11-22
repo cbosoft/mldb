@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+import scipy.stats
 from PySide6.QtWidgets import QTabWidget, QHBoxLayout
 import numpy as np
 
@@ -117,7 +118,6 @@ class MetricsView(BaseExpView):
         ]
 
         plot_widget.clear()
-        print(groupings)
         for i, (group, expids) in enumerate(sorted(groupings.items())):
             x, y = [], []
             for exp in expids:
@@ -127,6 +127,15 @@ class MetricsView(BaseExpView):
             plot_widget.axes.plot(
                 x, y, 'o', color=f'C{i}', label=group
             )
+            edges = np.arange(len(metrics_set)+1) - 0.5
+            x_means = np.arange(len(metrics_set))
+            y_means = scipy.stats.binned_statistic(x, y, bins=edges)[0]
+            for xi, yi in zip(x_means, y_means):
+                xi = np.add([-0.2, 0.2], xi)
+                yi = [yi, yi]
+                plot_widget.axes.plot(
+                    xi, yi, '--', color=f'C{i}'
+                )
         lbl_x = np.arange(len(metrics_set))
         plot_widget.axes.set_xticks(
             lbl_x, labels,
