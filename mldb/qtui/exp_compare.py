@@ -1,6 +1,5 @@
 from typing import List
 
-import numpy as np
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QWidget, QDialog,
@@ -11,7 +10,6 @@ from PySide6.QtWidgets import (
 
 from .plot_widget import PlotWidget
 from .exp_views import ExpLossAndLRView, ExpConfigView, MetricsView
-from .db_iop import DBExpDetails, DBExpMetrics
 
 
 class GroupTable(QTableWidget):
