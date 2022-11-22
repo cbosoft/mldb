@@ -6,6 +6,7 @@ from psycopg2 import connect
 
 from ..config import CONFIG
 from .schema import SCHEMA, TABLES
+from .exception import NoDataError
 
 
 class Database:
@@ -154,12 +155,11 @@ class Database:
                 raise e
             self.conn.rollback()
 
-    def get_state_file(self, exp_id: str, epoch: int) -> str:
-        self.cursor.execute(self.COMMAND_GET_STATE, (exp_id, epoch))
+    def get_state_file(self, expid: str, epoch: int) -> str:
+        self.cursor.execute(self.COMMAND_GET_STATE, (expid, epoch))
         results = self.cursor.fetchall()
-        n_results = len(results)
-        assert n_results < 2, f'Too many results returned! (expected 1, got {n_results})'
-        assert n_results > 0, f'Too few results returned! (expected 1, got {n_results})'
+        if not results:
+            raise NoDataError(f'No state file found for experiment "{expid}" at epoch {epoch}')
 
         state_file = results[0][0]
         return self.desanitise_path(state_file)
