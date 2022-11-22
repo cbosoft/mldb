@@ -3,6 +3,7 @@ from collections import defaultdict
 import scipy.stats
 from PySide6.QtWidgets import QTabWidget, QHBoxLayout
 import numpy as np
+from sklearn.manifold import TSNE
 
 from ..db_iop import DBExpMetrics, DBQuery
 from ..plot_widget import PlotWidget
@@ -22,8 +23,10 @@ class MetricsView(BaseExpView):
 
         self.error_plot = PlotWidget()
         self.corr_plot = PlotWidget()
+        self.tsne_plot = PlotWidget()
         self.tabs.addTab(self.error_plot, 'Errors')
         self.tabs.addTab(self.corr_plot, 'Correlations')
+        self.tabs.addTab(self.tsne_plot, 'TSNE')
 
         self.errors = set()
         self.corrs = set()
@@ -79,6 +82,7 @@ class MetricsView(BaseExpView):
         self.sort_exps_by_group()
         self.plot_errors()
         self.plot_corrs()
+        self.plot_tsne(self.errors)
 
     def sort_exps_by_group(self):
         self.exps_by_group = defaultdict(list)
@@ -143,3 +147,36 @@ class MetricsView(BaseExpView):
         plot_widget.legend()
         plot_widget.axes.set_yscale('log')
         plot_widget.redraw_and_flush()
+
+    def plot_tsne(self, metrics_set):
+        data, group_idxs = [], []
+        for i, (group, expids) in enumerate(self.exps_by_group.items()):
+            for expid in expids:
+                data.append([
+                    self.metrics_by_exp[expid][m]
+                    for m in metrics_set
+                    if (expid in self.metrics_by_exp) and (m in self.metrics_by_exp[expid])
+                ])
+                group_idxs.append(i)
+        data = np.array(data)
+        groups = list(self.exps_by_group.keys())
+        tsne = TSNE(
+            perplexity=min(len(data) - 1, 5),
+            learning_rate='auto',
+            init='pca'
+        )
+        res = tsne.fit_transform(data)
+
+        x = res[:, 0]
+        y = res[:, 1]
+        xy_by_group = defaultdict(lambda: ([], []))
+        for x, y, i in zip(x, y, group_idxs):
+            group = groups[i]
+            xy_by_group[group][0].append(x)
+            xy_by_group[group][1].append(y)
+
+        for group, (x, y) in xy_by_group.items():
+            self.tsne_plot.axes.plot(x, y, label=group)
+        self.tsne_plot.axes.set_xlabel('Component 1')
+        self.tsne_plot.axes.set_ylabel('Component 2')
+        self.tsne_plot.redraw_and_flush()
