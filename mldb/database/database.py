@@ -5,6 +5,7 @@ import numpy as np
 from psycopg2 import connect
 
 from ..config import CONFIG
+from .schema import SCHEMA, TABLES
 
 
 class Database:
@@ -33,10 +34,7 @@ class Database:
     COMMAND_GET_GROUPS_OF_EXP = 'SELECT GROUPNAME FROM EXPGROUPS WHERE EXPID=%s;'
     COMMAND_DELETE_EXPERIMENT = 'DELETE FROM %s WHERE EXPID=%s;'
 
-    TABLES = (
-        'STATUS', 'CONFIG', 'METRICS', 'STATE', 'HYPERPARAMS', 'LEARNINGRATE', 'QUALITATIVERESULTS',
-        'QUALITATIVERESULTSMETA', 'EXPGROUPS'
-    )
+    TABLES = TABLES
 
     def __init__(self):
         self.root_dir = CONFIG.root_dir
@@ -98,48 +96,20 @@ class Database:
         self.conn = connect(**CONFIG.as_dict())
         self.cursor = self.conn.cursor()
 
-    def ensure_schema(self):
-        commands = [
-            'CREATE TABLE IF NOT EXISTS \
-            STATUS (EXPID TEXT NOT NULL UNIQUE, STATUS TEXT NOT NULL);',
-
-            'CREATE TABLE IF NOT EXISTS \
-            CONFIG (EXPID TEXT NOT NULL UNIQUE, CONFIG TEXT NOT NULL);',
-
-            'CREATE TABLE IF NOT EXISTS \
-            LOSS (EXPID TEXT NOT NULL, EPOCH INTEGER NOT NULL, KIND TEXT NOT NULL, VALUE REAL NOT NULL,\
-            UNIQUE(EXPID, EPOCH, KIND));',
-
-            'CREATE TABLE IF NOT EXISTS \
-            METRICS (EXPID TEXT NOT NULL, EPOCH INTEGER NOT NULL, KIND TEXT NOT NULL, VALUE REAL NOT NULL,\
-            UNIQUE(EXPID, EPOCH, KIND));',
-
-            'CREATE TABLE IF NOT EXISTS \
-            STATE (EXPID TEXT NOT NULL, EPOCH INTEGER NOT NULL, PATH TEXT NOT NULL,\
-            UNIQUE(EXPID, EPOCH, PATH));',
-
-            'CREATE TABLE IF NOT EXISTS \
-            HYPERPARAMS (EXPID TEXT NOT NULL, NAME TEXT NOT NULL, VALUE TEXT NOT NULL,\
-            UNIQUE(EXPID, NAME));',
-
-            'CREATE TABLE IF NOT EXISTS \
-            LEARNINGRATE (EXPID TEXT NOT NULL, EPOCH INTEGER NOT NULL, VALUE TEXT NOT NULL,\
-            UNIQUE(EXPID, EPOCH));',
-
-            'CREATE TABLE IF NOT EXISTS \
-            QUALITATIVERESULTSMETA (EXPID TEXT NOT NULL, PLOTID TEXT NOT NULL, VALUE TEXT NOT NULL,\
-            UNIQUE(EXPID, PLOTID));',
-
-            'CREATE TABLE IF NOT EXISTS \
-            QUALITATIVERESULTS (EXPID TEXT NOT NULL, EPOCH INTEGER NOT NULL, PLOTID TEXT NOT NULL, VALUE TEXT NOT NULL);',
-
-            'CREATE TABLE IF NOT EXISTS \
-            EXPGROUPS (EXPID TEXT NOT NULL, GROUPNAME TEXT NOT NULL, \
-            UNIQUE(EXPID, GROUPNAME));'
-        ]
+    def run_query(self, *commands):
         for command in commands:
             self.cursor.execute(command)
+
+    def run_query_and_commit(self, *commands):
+        self.run_query(*commands)
         self.conn.commit()
+
+    def run_query_and_fetch(self, *commands):
+        self.run_query(*commands)
+        return self.cursor.fetchall()
+
+    def ensure_schema(self):
+        self.run_query_and_commit(*SCHEMA)
 
     def close(self):
         self.conn.close()
