@@ -67,7 +67,7 @@ def plot_widget_and_table(grouping_table=False):
         return w, plt, tbl
 
 
-class ExpCompareDialog(QDialog):
+class ExpCompareAndViewDialog(QDialog):
 
     QUERY = ''
 

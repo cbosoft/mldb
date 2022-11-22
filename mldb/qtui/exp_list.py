@@ -3,11 +3,8 @@ from typing import List
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QTableWidget, QTableWidgetItem, QPushButton
 from PySide6.QtCore import Signal
 
-from mldb import Database
-
-from .db_iop import DBQuery, DBMethod
-from .exp_view import ExpViewDialog
-from .exp_compare import ExpCompareDialog
+from .db_iop import DBQuery
+from .exp_compare_and_vew import ExpCompareAndViewDialog
 from .edit_groups import GroupEditDialog
 
 
@@ -93,10 +90,8 @@ class ExperimentListWidget(QWidget):
 
     def view_or_compare_exp(self):
         exps = self.get_selected_experiments()
-        if len(exps) == 1:
-            ExpViewDialog(self, exps[0]).show()
-        elif len(exps) > 1:
-            ExpCompareDialog(self, exps).show()
+        if exps:
+            ExpCompareAndViewDialog(self, exps).show()
         else:
             print('No experiments')
 
