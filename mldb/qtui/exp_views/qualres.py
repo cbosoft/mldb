@@ -23,7 +23,6 @@ class ExpQualresView(BaseExpView):
         DBExpQualResults(self.expid, self.qualres_returned).start()
 
     def qualres_returned(self, plotids_and_qualres):
-        print(plotids_and_qualres)
         for plotid, data in plotids_and_qualres:
             pw = PlotWidget()
             self.tabs.addTab(pw, plotid)
