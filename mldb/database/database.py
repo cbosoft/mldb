@@ -44,6 +44,7 @@ class Database:
         self.port = CONFIG.port
         self.database = CONFIG.database
         self.conn = self.cursor = None
+
         self.connect()
         self.ensure_schema()
 
@@ -164,48 +165,51 @@ class Database:
         state_file = results[0][0]
         return self.desanitise_path(state_file)
 
-    def get_experiment_details(self, exp_id) -> dict:
-        self.cursor.execute(self.COMMAND_GET_STATUS, (exp_id,))
+    def get_status(self, expid: str) -> str:
+        self.cursor.execute(self.COMMAND_GET_STATUS, (expid,))
         results = self.cursor.fetchall()
 
         if not results:
-            return dict(error=True, why='No results returned.')
-        elif len(results) > 1:
-            return dict(error=True, why='More results than expected.')
+            raise NoDataError(f'No status information found for experiment "{expid}"')
 
         status = results[0][1]
+        return status
 
-        self.cursor.execute(self.COMMAND_GET_LOSSES, (exp_id,))
+    def get_losses(self, expid: str) -> dict:
+        self.cursor.execute(self.COMMAND_GET_LOSSES, (expid,))
         results = self.cursor.fetchall()
 
-        if results:
-            res_by_cols = list(zip(*results))
+        if not results:
+            raise NoDataError(f'No losses found for experiment "{expid}"')
+        res_by_cols = list(zip(*results))
 
-            epochs = res_by_cols[1]
-            loss_kinds = res_by_cols[2]
-            losses = res_by_cols[3]
-            uniq_kinds = set(loss_kinds)
-            losses = {
-                k: dict(
-                    loss=[l for l, lk in zip(losses, loss_kinds) if lk == k],
-                    epoch=[e for e, lk in zip(epochs, loss_kinds) if lk == k],
-                )
-                for k in uniq_kinds
-            }
-        else:
-            losses = dict()
+        epochs = res_by_cols[1]
+        loss_kinds = res_by_cols[2]
+        losses = res_by_cols[3]
+        uniq_kinds = set(loss_kinds)
 
+        return {
+            k: dict(
+                loss=[l for l, lk in zip(losses, loss_kinds) if lk == k],
+                epoch=[e for e, lk in zip(epochs, loss_kinds) if lk == k],
+            )
+            for k in uniq_kinds
+        }
+
+    def get_lrs(self, expid: str) -> dict:
         lr_es, lrs = [], []
-        for lr in self.get_lr_values(exp_id):
+        for lr in self.get_lr_values(expid):
             e, lr = lr[0][1:-1].split(',')
             lr_es.append(int(e))
             lrs.append(float(lr))
+        return dict(epochs=lr_es, lrs=lrs)
 
+    def get_experiment_details(self, expid: str) -> dict:
         return dict(
-            expid=exp_id,
-            status=status,
-            losses=losses,
-            lrs=dict(epochs=lr_es, lrs=lrs)
+            expid=expid,
+            status=self.get_status(expid),
+            losses=self.get_losses(expid),
+            lrs=self.get_lrs(expid)
         )
 
     def get_latest_metrics(self, exp_id) -> dict:
