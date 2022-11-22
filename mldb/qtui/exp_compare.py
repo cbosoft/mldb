@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 )
 
 from .plot_widget import PlotWidget
-from .exp_views import ExpLossAndLRView, ExpConfigView, MetricsView
+from .exp_views import ExpLossAndLRView, ExpConfigView, MetricsView, ExpQualresView
 
 
 class GroupTable(QTableWidget):
@@ -83,3 +83,4 @@ class ExpCompareDialog(QDialog):
         self.tabs.addTab(ExpConfigView(*expids), 'Config')
         self.tabs.addTab(ExpLossAndLRView(*expids), 'Loss v Epoch')
         self.tabs.addTab(MetricsView(*expids), 'Metrics')
+        self.tabs.addTab(ExpQualresView(*expids), 'QualRes')
