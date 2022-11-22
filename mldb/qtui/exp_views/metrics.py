@@ -26,7 +26,6 @@ class MetricsView(BaseExpView):
         self.tsne_plot = PlotWidget()
         self.tabs.addTab(self.error_plot, 'Errors')
         self.tabs.addTab(self.corr_plot, 'Correlations')
-        self.tabs.addTab(self.tsne_plot, 'TSNE')
 
         self.errors = set()
         self.corrs = set()
@@ -159,6 +158,9 @@ class MetricsView(BaseExpView):
                 ])
                 group_idxs.append(i)
         data = np.array(data)
+        if len(data) < 2:
+            print('Not enough data for TSNE metrics plot')
+            return
         groups = list(self.exps_by_group.keys())
         tsne = TSNE(
             perplexity=min(len(data) - 1, 5),
@@ -180,3 +182,7 @@ class MetricsView(BaseExpView):
         self.tsne_plot.axes.set_xlabel('Component 1')
         self.tsne_plot.axes.set_ylabel('Component 2')
         self.tsne_plot.redraw_and_flush()
+
+        tab_names = {self.tabs.tabText(i) for i in range(self.tabs.count())}
+        if 'TSNE' not in tab_names:
+            self.tabs.addTab(self.tsne_plot, 'TSNE')
