@@ -10,6 +10,9 @@ from .view_base import BaseExpView
 class ExpLossAndLRView(BaseExpView):
 
     def __init__(self, *expids: str):
+        if len(expids) > 4:
+            print('Too many experiments for plotting losses; only showing first three.')
+            expids = expids[:4]
         super().__init__(*expids)
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
