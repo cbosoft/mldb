@@ -178,7 +178,8 @@ class MetricsView(BaseExpView):
             xy_by_group[group][1].append(y)
 
         for group, (x, y) in xy_by_group.items():
-            self.tsne_plot.axes.plot(x, y, label=group)
+            self.tsne_plot.axes.plot(x, y, 'o', alpha=0.5, label=group)
+
         self.tsne_plot.axes.set_xlabel('Component 1')
         self.tsne_plot.axes.set_ylabel('Component 2')
         self.tsne_plot.redraw_and_flush()
