@@ -44,6 +44,10 @@ class ExpQualresView(BaseExpView):
         plot.axes.set_xscale(xscale)
         plot.axes.set_yscale(yscale)
 
+        # TODO:
+        #  - Colour by epoch?
+        #  - Colour by GT/class?
+
         for i, datum in enumerate(data):
             colour = f'C{i%10}'
             datum: dict
