@@ -165,12 +165,11 @@ class _DBExpHyperParamsWorker(QRunnable):
 
 class DBMethod(QObject):
 
-    results_returned = Signal(list)
+    results_returned = Signal(object)
 
-    def __init__(self, method, *args, slot=None):
+    def __init__(self, method, *args: tuple, slot=None):
         super().__init__()
-        print(method, args)
-        self.query = _DBMethodWorker(method, args, lambda rows: self.results_returned.emit(rows))
+        self.query = _DBMethodWorker(method, *args, cb=lambda rows: self.results_returned.emit(rows))
         if slot:
             self.results_returned.connect(slot)
 
@@ -180,13 +179,13 @@ class DBMethod(QObject):
 
 class _DBMethodWorker(QRunnable):
 
-    def __init__(self, method, args, cb):
+    def __init__(self, method, *argss, cb):
         super().__init__()
         self.method = method
-        self.args = args
+        self.argss = argss
         self.cb = cb
 
     def run(self):
-        print('running method')
         with Database() as db:
-            self.cb(self.method(db, *self.args))
+            for args in self.argss:
+                self.cb(self.method(db, *args))
