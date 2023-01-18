@@ -47,7 +47,7 @@ class GroupEditDialog(QDialog):
         self.groupset = None
         self.i = len(self.expids)
         for expid in self.expids:
-            DBMethod(lambda db, e: db.get_groups_of_exp(e), expid, slot=self.groups_returned).start()
+            DBMethod(Database.get_groups_of_exp, (expid,), slot=self.groups_returned).start()
 
     def groups_returned(self, groups):
         if self.groupset is None:
@@ -64,10 +64,14 @@ class GroupEditDialog(QDialog):
 
     def add_group(self):
         group = self.txt_new_group.text()
-        for expid in self.expids:
-            DBMethod(lambda db, e, g: db.add_to_group(e, g), expid, group, slot=self.refresh_group_list).start()
+        DBMethod(
+            Database.add_to_group,
+            *[(expid, group) for expid in self.expids],
+            slot=self.refresh_group_list).start()
 
     def rem_group(self):
         selected_group = self.group_list.currentItem().text()
-        for expid in self.expids:
-            DBMethod(lambda db, e, g: db.remove_from_group(e, g), expid, selected_group, slot=self.refresh_group_list).start()
+        DBMethod(
+            Database.remove_from_group,
+            *[(expid, selected_group) for expid in self.expids],
+            slot=self.refresh_group_list).start()
