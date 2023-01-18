@@ -154,9 +154,13 @@ class ExperimentListWidget(QWidget):
         self.table_experiments.setRowCount(n)
         if n:
             dp = 100//n
-            for i, (expid, status) in enumerate(reversed(rows)):
-                self.table_experiments.setItem(i, 0, QTableWidgetItem(expid))
-                self.table_experiments.setItem(i, 1, QTableWidgetItem(status))
+            for i, (expid, status) in enumerate(rows):
+                expid_wi = QTableWidgetItem(expid)
+                expid_wi.setToolTip(expid)
+                status_wi = QTableWidgetItem(status)
+                status_wi.setToolTip(status)
+                self.table_experiments.setItem(i, 0, expid_wi)
+                self.table_experiments.setItem(i, 1, status_wi)
                 self.set_progress((i + 1)*dp)
             self.set_status(f'{n} experiments found.')
         else:
@@ -187,7 +191,9 @@ class ExperimentListWidget(QWidget):
                 groups = ', '.join(groups_by_exp[e])
             else:
                 groups = ''
-            self.table_experiments.setItem(i, 2, QTableWidgetItem(groups))
+            groups_wi = QTableWidgetItem(groups)
+            groups_wi.setToolTip(groups)
+            self.table_experiments.setItem(i, 2, groups_wi)
 
     def populate_models(self, expids):
         assert self.models is None
