@@ -33,7 +33,7 @@ class Database:
     COMMAND_REMOVE_FROM_GROUP = 'DELETE FROM EXPGROUPS WHERE EXPID=%s AND GROUPNAME=%s;'
     COMMAND_GET_GROUP = 'SELECT EXPID FROM EXPGROUPS WHERE GROUPNAME=%s;'
     COMMAND_GET_GROUPS_OF_EXP = 'SELECT GROUPNAME FROM EXPGROUPS WHERE EXPID=%s;'
-    COMMAND_DELETE_EXPERIMENT = 'DELETE FROM %s WHERE EXPID=%s;'
+    COMMAND_DELETE_EXPERIMENT = 'DELETE FROM {} WHERE EXPID=%s;'
 
     TABLES = TABLES
 
@@ -280,5 +280,5 @@ class Database:
 
     def delete_experiment(self, exp_id: str):
         for table in self.TABLES:
-            self.cursor.execute(self.COMMAND_DELETE_EXPERIMENT, (table, exp_id))
+            self.cursor.execute(self.COMMAND_DELETE_EXPERIMENT.format(table), (exp_id,))
         self.conn.commit()
