@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 import scipy.stats
-from PySide6.QtWidgets import QTabWidget, QHBoxLayout
+from PySide6.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QComboBox
 import numpy as np
 from sklearn.manifold import TSNE
 
@@ -16,15 +16,24 @@ class MetricsView(BaseExpView):
 
     def __init__(self, *expids: str):
         super().__init__(*expids)
-        self.layout = QHBoxLayout(self)
+        self.layout = QVBoxLayout(self)
 
         self.tabs = QTabWidget()
         self.layout.addWidget(self.tabs)
 
         self.error_plot = PlotWidget()
+        self.error_plot_alt = PlotWidget()
         self.corr_plot = PlotWidget()
         self.tsne_plot = PlotWidget()
         self.tabs.addTab(self.error_plot, 'Errors')
+        self.group_parts_selector = QComboBox()
+        self.group_parts_set = set()
+        self.group_parts_data = dict()
+        alt_plot_container = QWidget()
+        alt_plot_container.layout = QVBoxLayout(alt_plot_container)
+        alt_plot_container.layout.addWidget(self.error_plot_alt)
+        alt_plot_container.layout.addWidget(self.group_parts_selector)
+        self.tabs.addTab(alt_plot_container, 'Errors (alt)')
         self.tabs.addTab(self.corr_plot, 'Correlations')
 
         self.errors = set()
@@ -68,6 +77,20 @@ class MetricsView(BaseExpView):
             expid = rows[0][0]
             groups = [row[1] for row in rows]
 
+            for group in groups:
+                parts = group.split(';')
+                self.group_parts_data[group] = dict()
+                for part in parts:
+                    k, v = part.split('=')
+                    self.group_parts_set.add(k)
+
+                    try:
+                        v = float(v)
+                    except:
+                        pass
+
+                    self.group_parts_data[group][k] = v
+
             self.groupings_by_exp[expid] = groups
         except Exception as e:
             print(e)
@@ -75,6 +98,8 @@ class MetricsView(BaseExpView):
         self.readiness += 1
 
         if self.readiness >= 0:
+            self.group_parts_selector.addItems(self.group_parts_set)
+            self.group_parts_selector.currentIndexChanged.connect(self.plot_errors)
             self.plot_metrics()
 
     def plot_metrics(self):
@@ -99,6 +124,7 @@ class MetricsView(BaseExpView):
 
     def plot_errors(self):
         self.plot_metric_set(self.error_plot, sorted(self.errors), self.exps_by_group)
+        self.plot_metric_set_alt(self.error_plot_alt, sorted(self.errors), self.exps_by_group)
 
     def plot_corrs(self):
         self.plot_metric_set(self.corr_plot, sorted(self.corrs), self.exps_by_group)
@@ -142,6 +168,50 @@ class MetricsView(BaseExpView):
         lbl_x = np.arange(len(metrics_set))
         plot_widget.axes.set_xticks(
             lbl_x, labels,
+        )
+        plot_widget.legend()
+        plot_widget.axes.set_yscale('log')
+        plot_widget.redraw_and_flush()
+
+    def plot_metric_set_alt(self, plot_widget: PlotWidget, metrics_set: list, groupings: dict):
+
+        assert groupings, f'Groupings is unset!'
+
+        groups = sorted(groupings)
+        n_groups = len(groups)
+        n_metrics = len(metrics_set)
+
+        max_exps_per_group = max([len(expids) for expids in groupings.values()])
+        print('max exps per group', max_exps_per_group)
+
+        xkey = self.group_parts_selector.currentText()
+        print(f'plotting metrics against {xkey}')
+
+        x = []
+        x_lbls_pos = []
+        for g in groups:
+            xi = self.group_parts_data[g][xkey]
+            x_lbls_pos.append(xi)
+            for _ in range(max_exps_per_group):
+                x.append(xi)
+        x_lbls = None
+
+        ys = np.full((n_groups*max_exps_per_group, n_metrics), np.nan)
+
+        for i, (group, expids) in enumerate(sorted(groupings.items())):
+            for j, exp in enumerate(expids):
+                for k, m in enumerate(metrics_set):
+                    ys[i*max_exps_per_group + j, k] = self.metrics_by_exp[exp].get(m, float('nan'))
+
+        plot_widget.clear()
+        for i, metric in enumerate(metrics_set):
+            plot_widget.axes.plot(
+                x, ys[:, i], 'o', color=f'C{i}', label=metric
+            )
+        plot_widget.axes.set_ylabel('Error')
+        plot_widget.axes.set_xlabel(xkey)
+        plot_widget.axes.set_xticks(
+           x, x_lbls,
         )
         plot_widget.legend()
         plot_widget.axes.set_yscale('log')
