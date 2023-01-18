@@ -34,6 +34,10 @@ class ExperimentListWidget(QWidget):
         cols = ['Exp. ID', 'Status', 'Groups']
         self.table_experiments.setColumnCount(len(cols))
         self.table_experiments.setHorizontalHeaderLabels(cols)
+        header = self.table_experiments.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.Stretch)
         # self.table_experiments.horizontalHeader().section(True)
         # self.table_experiments.horizontalHeader().setDefaultSectionSize(400)
         self.table_experiments.setEditTriggers(QTableWidget.NoEditTriggers)
