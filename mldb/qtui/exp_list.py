@@ -1,9 +1,12 @@
 from typing import List
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QTableWidget, QTableWidgetItem, QPushButton
-from PySide6.QtCore import Signal
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QTableWidget,
+    QTableWidgetItem, QPushButton, QLineEdit, QHeaderView
+)
+from PySide6.QtCore import Signal, Qt
 
-from .db_iop import DBQuery
+from .db_iop import DBQuery, DBMethod, Database
 from .exp_compare_and_vew import ExpCompareAndViewDialog
 from .edit_groups import GroupEditDialog
 
@@ -29,6 +32,15 @@ class ExperimentListWidget(QWidget):
             self.query_selector.addItem(n, userData=q)
         self.query_selector.currentIndexChanged.connect(self.query_changed)
 
+        search_box = QWidget()
+        self.layout.addWidget(search_box)
+        search_box.layout = QHBoxLayout(search_box)
+        search_text_input = QLineEdit()
+        search_button = QPushButton('Search')
+        search_button.clicked.connect(lambda: self.search(search_text_input.text()))
+        search_box.layout.addWidget(search_text_input)
+        search_box.layout.addWidget(search_button)
+
         self.table_experiments = QTableWidget()
         self.layout.addWidget(self.table_experiments)
         cols = ['Exp. ID', 'Status', 'Groups']
@@ -48,7 +60,8 @@ class ExperimentListWidget(QWidget):
         btn_box = QWidget()
         btn_box.layout = QHBoxLayout(btn_box)
         self.view_button = QPushButton()
-        self.delete_button = QPushButton('Delete Exp')
+        self.delete_button = QPushButton('Delete Exp')  # does nothing?
+        self.delete_button.clicked.connect(self.delete_selected)
         self.group_button = QPushButton('Group')
         self.group_button.clicked.connect(self.edit_groups)
         btn_box.layout.addWidget(self.view_button)
@@ -59,7 +72,6 @@ class ExperimentListWidget(QWidget):
 
         self.query_changed(0)
         self.exp_selection_changed()
-        DBQuery('SELECT GROUPNAME FROM EXPGROUPS;', self.populate_groups).start()
 
         self.models = None
 
@@ -74,6 +86,20 @@ class ExperimentListWidget(QWidget):
         selection = self.table_experiments.selectedIndexes()
         selection = [i.data() for i in selection if i.column() == 0]
         return selection
+
+    def delete_selected(self):
+        exp_ids = self.get_selected_experiments()
+        DBMethod(
+            Database.delete_experiment,
+            *[(e,) for e in exp_ids],
+            slot=self.remove_expid_from_table
+        ).start()
+
+    def remove_expid_from_table(self, expid):
+        items = self.table_experiments.findItems(expid, Qt.MatchFlag.MatchExactly & 1)
+        rows = set(i.row() for i in items)
+        assert len(rows) == 1
+        self.table_experiments.removeRow(list(rows)[0])
 
     def exp_selection_changed(self):
         exps = self.get_selected_experiments()
@@ -109,6 +135,16 @@ class ExperimentListWidget(QWidget):
         query.results_returned.connect(self.display_experiments)
         query.start()
 
+    @staticmethod
+    def parse_sql_from_search(sq: str) -> str:
+        sq = sq.replace(' ', '%')
+        return f'EXPID LIKE \'%{sq}%\' OR STATUS LIKE \'%{sq}%\''
+
+    def search(self, search_query: str):
+        conditions = self.parse_sql_from_search(search_query)
+        query = f'SELECT * FROM STATUS WHERE {conditions};'
+        self.run_query(query)
+
     def query_changed(self, _: int):
         self.run_query(self.query_selector.currentData())
 
@@ -116,19 +152,24 @@ class ExperimentListWidget(QWidget):
         # self.table_experiments.clear()
         n = len(rows)
         self.table_experiments.setRowCount(n)
-        dp = 100//n
-        for i, (expid, status) in enumerate(reversed(rows)):
-            self.table_experiments.setItem(i, 0, QTableWidgetItem(expid))
-            self.table_experiments.setItem(i, 1, QTableWidgetItem(status))
-            self.set_progress((i + 1)*dp)
-        self.set_progress(100)
-        self.set_status('')
+        if n:
+            dp = 100//n
+            for i, (expid, status) in enumerate(reversed(rows)):
+                self.table_experiments.setItem(i, 0, QTableWidgetItem(expid))
+                self.table_experiments.setItem(i, 1, QTableWidgetItem(status))
+                self.set_progress((i + 1)*dp)
+            self.set_status(f'{n} experiments found.')
+        else:
+            self.set_status('No experiments found!')
 
-        if self.models is None:
-            # No model cache, likely this is the first call
-            # so this is the all exp query and can use it to populate models
-            self.populate_models([e for e, _ in rows])
-            self.refresh_groups()
+        self.set_progress(100)
+
+        # if self.models is None:
+        #     # No model cache, likely this is the first call
+        #     # so this is the all exp query and can use it to populate models
+        #     self.populate_models([e for e, _ in rows])
+
+        self.refresh_groups()
 
     def refresh_groups(self):
         DBQuery('SELECT * FROM EXPGROUPS;', self.display_groups).start()
