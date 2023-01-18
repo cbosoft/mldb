@@ -43,7 +43,8 @@ class Database:
         self.user = CONFIG.user
         self.port = CONFIG.port
         self.database = CONFIG.database
-        self.conn = self.cursor = None
+        self.conn = None
+        self.cursor = None
 
         self.connect()
         self.ensure_schema()
