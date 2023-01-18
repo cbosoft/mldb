@@ -283,3 +283,4 @@ class Database:
         for table in self.TABLES:
             self.cursor.execute(self.COMMAND_DELETE_EXPERIMENT.format(table), (exp_id,))
         self.conn.commit()
+        return exp_id
