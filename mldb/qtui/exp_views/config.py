@@ -48,15 +48,19 @@ class ExpConfigView(BaseExpView):
             ).start()
 
     def config_returned(self, expid_and_path):
-        expid, path = expid_and_path[0]
-
-        full_path = os.path.join(CONFIG.root_dir, path)
-
         try:
-            with open(full_path) as f:
-                t = f.read()
-            t = f'# {path}\n' + t
-        except IOError as e:
-            t = f'Could not read config for experiment {expid}.\n{e}'
+            expid, path = expid_and_path[0]
 
-        self.txt_boxes_by_id[expid].setText(t)
+            full_path = os.path.join(CONFIG.root_dir, path)
+
+            try:
+                with open(full_path) as f:
+                    t = f.read()
+                t = f'# {path}\n' + t
+            except IOError as e:
+                t = f'Could not read config for experiment {expid}.\n{e}'
+
+            self.txt_boxes_by_id[expid].setText(t)
+        except Exception as e:
+            print(f'config display failed: {e}')
+            raise
