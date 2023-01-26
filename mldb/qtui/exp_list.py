@@ -153,7 +153,6 @@ class ExperimentListWidget(QWidget):
         n = len(rows)
         self.table_experiments.setRowCount(n)
         if n:
-            dp = 100//n
             for i, (expid, status) in enumerate(rows):
                 expid_wi = QTableWidgetItem(expid)
                 expid_wi.setToolTip(expid)
@@ -161,7 +160,6 @@ class ExperimentListWidget(QWidget):
                 status_wi.setToolTip(status)
                 self.table_experiments.setItem(i, 0, expid_wi)
                 self.table_experiments.setItem(i, 1, status_wi)
-                self.set_progress((i + 1)*dp)
             self.set_status(f'{n} experiments found.')
         else:
             self.set_status('No experiments found!')
