@@ -206,6 +206,7 @@ class MetricsView(BaseExpView):
         plot_widget.axes.set_xticks(
             lbl_x, labels,
         )
+        plot_widget.axes.set_ylabel('Error')
         plot_widget.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02))
         plot_widget.axes.set_yscale('log')
         plot_widget.redraw_and_flush()
