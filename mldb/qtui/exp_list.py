@@ -1,10 +1,11 @@
-from typing import List
+from typing import List, Union
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QTableWidget,
     QTableWidgetItem, QPushButton, QLineEdit, QHeaderView
 )
 from PySide6.QtCore import Signal, Qt
+import psycopg2.sql
 
 from .db_iop import DBQuery, DBMethod, Database
 from .exp_compare_and_vew import ExpCompareAndViewDialog
@@ -12,7 +13,6 @@ from .edit_groups import GroupEditDialog
 
 
 class ExperimentListWidget(QWidget):
-
     QUERIES = dict(
         all=('All Experiments', 'SELECT * FROM STATUS ORDER BY EXPID DESC;'),
         active=('Active Experiments', 'SELECT * FROM STATUS WHERE STATUS=\'TRAINING\' ORDER BY EXPID DESC;'),
@@ -125,7 +125,7 @@ class ExperimentListWidget(QWidget):
         else:
             print('No experiments')
 
-    def run_query(self, query: str):
+    def run_query(self, query: Union[str, psycopg2.sql.Composable]):
         # self.table_experiments.clear()
         self.table_experiments.setRowCount(0)
         self.set_status('Querying database...')
@@ -136,13 +136,19 @@ class ExperimentListWidget(QWidget):
         query.start()
 
     @staticmethod
-    def parse_sql_from_search(sq: str) -> str:
+    def parse_sql_from_search(sq: str) -> psycopg2.sql.Literal:
         sq = sq.replace(' ', '%')
-        return f'EXPID LIKE \'%{sq}%\' OR STATUS LIKE \'%{sq}%\''
+        sq = f'%{sq}%'
+        return psycopg2.sql.Literal(sq)
 
     def search(self, search_query: str):
-        conditions = self.parse_sql_from_search(search_query)
-        query = f'SELECT * FROM STATUS WHERE {conditions};'
+        condition = self.parse_sql_from_search(search_query)
+        query = 'SELECT * FROM STATUS WHERE STATUS.EXPID IN ' \
+                '(SELECT EXPID FROM EXPGROUPS WHERE GROUPNAME LIKE {condition}) ' \
+                'OR STATUS.EXPID LIKE {condition}' \
+                'OR STATUS.STATUS LIKE {condition}' \
+                'ORDER BY EXPID DESC;'
+        query = psycopg2.sql.SQL(query).format(condition=condition)
         self.run_query(query)
 
     def query_changed(self, _: int):
