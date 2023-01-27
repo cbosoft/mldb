@@ -14,8 +14,8 @@ from .edit_groups import GroupEditDialog
 class ExperimentListWidget(QWidget):
 
     QUERIES = dict(
-        all=('All Experiments', 'SELECT * FROM STATUS;'),
-        active=('Active Experiments', 'SELECT * FROM STATUS WHERE STATUS=\'TRAINING\';'),
+        all=('All Experiments', 'SELECT * FROM STATUS ORDER BY EXPID DESC;'),
+        active=('Active Experiments', 'SELECT * FROM STATUS WHERE STATUS=\'TRAINING\' ORDER BY EXPID DESC;'),
     )
 
     status_signal = Signal(str)
