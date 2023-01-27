@@ -220,10 +220,8 @@ class MetricsView(BaseExpView):
         n_metrics = len(metrics_set)
 
         max_exps_per_group = max([len(expids) for expids in groupings.values()])
-        print('max exps per group', max_exps_per_group)
 
         xkey = self.group_parts_selector.currentText()
-        print(f'plotting metrics against {xkey}')
 
         x = []
         x_lbls_pos = []
