@@ -13,7 +13,6 @@ from .exp_views import ExpLossAndLRView, ExpConfigView, MetricsView, ExpQualresV
 
 
 class GroupTable(QTableWidget):
-
     groups_changed = Signal(dict)
 
     def __init__(self):
@@ -68,12 +67,12 @@ def plot_widget_and_table(grouping_table=False):
 
 
 class ExpCompareAndViewDialog(QDialog):
-
     QUERY = ''
 
     def __init__(self, parent: QWidget, expids: List[str], *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.expids = expids
+        self.resize(1280, 720)
 
         self.layout = QVBoxLayout(self)
 
