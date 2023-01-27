@@ -10,8 +10,19 @@ from ..plot_widget import PlotWidget
 from .view_base import BaseExpView
 
 
-class MetricsView(BaseExpView):
+def wrap(s: str) -> str:
+    MAX = 75
+    s = s.replace('_2018', '').replace('_lim50', '').replace('PolyS,PolyS', 'PolyS')
+    if len(s) > MAX:
+        # split on ';' before MAX or just at MAX if ';' can't be found.
+        pivot = s.rfind(';', 0, MAX) + 1
+        if not pivot:
+            pivot = MAX
+        s = s[:pivot] + '\n' + s[pivot:]
+    return s
 
+
+class MetricsView(BaseExpView):
     GROUP_QUERY = 'SELECT * FROM EXPGROUPS WHERE EXPID=\'{}\';'
 
     def __init__(self, *expids: str):
@@ -154,7 +165,7 @@ class MetricsView(BaseExpView):
                     x.append(j)
                     y.append(self.metrics_by_exp[exp].get(m, float('nan')))
             plot_widget.axes.plot(
-                x, y, 'o', color=f'C{i}', label=group
+                x, y, 'o', color=f'C{i}', label=wrap(group)
             )
             edges = np.arange(len(metrics_set)+1) - 0.5
             x_means = np.arange(len(metrics_set))
@@ -169,7 +180,7 @@ class MetricsView(BaseExpView):
         plot_widget.axes.set_xticks(
             lbl_x, labels,
         )
-        plot_widget.legend()
+        plot_widget.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02))
         plot_widget.axes.set_yscale('log')
         plot_widget.redraw_and_flush()
 
