@@ -60,7 +60,7 @@ class ExperimentListWidget(QWidget):
         btn_box = QWidget()
         btn_box.layout = QHBoxLayout(btn_box)
         self.view_button = QPushButton()
-        self.delete_button = QPushButton('Delete Exp')  # does nothing?
+        self.delete_button = QPushButton('Delete Exp')
         self.delete_button.clicked.connect(self.delete_selected)
         self.group_button = QPushButton('Group')
         self.group_button.clicked.connect(self.edit_groups)
@@ -155,7 +155,6 @@ class ExperimentListWidget(QWidget):
         self.run_query(self.query_selector.currentData())
 
     def display_experiments(self, rows):
-        # self.table_experiments.clear()
         n = len(rows)
         self.table_experiments.setRowCount(n)
         if n:
