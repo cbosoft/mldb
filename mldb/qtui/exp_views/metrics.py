@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 import scipy.stats
-from PySide6.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QComboBox
+from PySide6.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QComboBox, QTableWidget, QTableWidgetItem
 import numpy as np
 from sklearn.manifold import TSNE
 
@@ -46,6 +46,8 @@ class MetricsView(BaseExpView):
         alt_plot_container.layout.addWidget(self.group_parts_selector)
         self.tabs.addTab(alt_plot_container, 'Errors (alt)')
         self.tabs.addTab(self.corr_plot, 'Correlations')
+        self.metric_table = QTableWidget()
+        self.tabs.addTab(self.metric_table, 'Table')
 
         self.errors = set()
         self.corrs = set()
@@ -118,6 +120,30 @@ class MetricsView(BaseExpView):
         self.plot_errors()
         self.plot_corrs()
         self.plot_tsne(self.errors)
+        self.fill_table()
+
+    def fill_table(self):
+        self.metric_table.setColumnCount(6)
+        self.metric_table.setHorizontalHeaderLabels(['Group', 'Metric', 'Mean', 'Median', 'Min', 'Max'])
+        self.metric_table.setRowCount(0)
+        r = 0
+        for i, (group, expids) in enumerate(sorted(self.exps_by_group.items())):
+            values = dict()
+            for exp in expids:
+                for m, v in self.metrics_by_exp[exp].items():
+                    if m not in values:
+                        values[m] = []
+                    values[m].append(v)
+
+            for m, v in values.items():
+                self.metric_table.setRowCount(r + 1)
+                self.metric_table.setItem(r, 0, QTableWidgetItem(group))
+                self.metric_table.setItem(r, 1, QTableWidgetItem(m))
+                self.metric_table.setItem(r, 2, QTableWidgetItem(str(np.mean(v))))
+                self.metric_table.setItem(r, 3, QTableWidgetItem(str(np.median(v))))
+                self.metric_table.setItem(r, 4, QTableWidgetItem(str(np.max(v))))
+                self.metric_table.setItem(r, 5, QTableWidgetItem(str(np.min(v))))
+                r += 1
 
     def sort_exps_by_group(self):
         self.exps_by_group = defaultdict(list)
