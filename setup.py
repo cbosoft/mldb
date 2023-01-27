@@ -8,7 +8,7 @@ setup(
     author_email='chris@cmjb.tech',
     packages=find_packages(),
     install_requires=['wheel'],
-    requires=['numpy', 'matplotlib', 'psycopg2', 'simplejson'],
+    requires=['numpy', 'matplotlib', 'psycopg2', 'simplejson', 'syt', 'scipy', 'scikit-learn'],
     extras_require=dict(
         test=['pytest', 'torch'],
         qtui='PySide6'
