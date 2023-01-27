@@ -111,7 +111,7 @@ class MetricsView(BaseExpView):
         self.readiness += 1
 
         if self.readiness >= 0:
-            self.group_parts_selector.addItems(self.group_parts_set)
+            self.group_parts_selector.addItems(sorted(self.group_parts_set))
             self.group_parts_selector.currentIndexChanged.connect(self.plot_errors)
             self.plot_metrics()
 
