@@ -18,13 +18,13 @@ if is_dark_theme():
 
 
 class PlotWidget(FigureCanvasQTAgg):
-
     selection_changed = QtCore.Signal(float, float, bool, name='selection_changed')
 
     def __init__(self, dpi=100, can_select=False, ax_rect=(0.2, 0.2, 0.75, 0.7)):
         fig = Figure(dpi=dpi)
+        fig.set_tight_layout(True)
         super().__init__(fig)
-        self.axes: Axes = fig.add_axes(ax_rect)
+        self.axes: Axes = fig.add_subplot()
         self._twax = None
 
         self.selection_axes = [0, 0]
@@ -71,8 +71,8 @@ class PlotWidget(FigureCanvasQTAgg):
     def convert_pt(self, pt: QtCore.QPoint):
         w, h = self.get_width_height()
         pw, ph = self.get_width_height(physical=True)
-        s = pw/w
-        pt = pt.x()*s, (h - pt.y())*s
+        s = pw / w
+        pt = pt.x() * s, (h - pt.y()) * s
         pt_data = self.axes.transData.inverted().transform_point(pt)
         pt_axes = self.axes.transAxes.inverted().transform_point(pt)
         return pt_data, pt_axes
