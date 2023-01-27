@@ -193,7 +193,7 @@ class MetricsView(BaseExpView):
             plot_widget.axes.plot(
                 x, y, 'o', color=f'C{i}', label=wrap(group)
             )
-            edges = np.arange(len(metrics_set)+1) - 0.5
+            edges = np.arange(len(metrics_set) + 1) - 0.5
             x_means = np.arange(len(metrics_set))
             y_means = scipy.stats.binned_statistic(x, y, bins=edges)[0]
             for xi, yi in zip(x_means, y_means):
@@ -224,20 +224,19 @@ class MetricsView(BaseExpView):
         xkey = self.group_parts_selector.currentText()
 
         x = []
-        x_lbls_pos = []
+        # x_lbls_pos = []
         for g in groups:
             xi = self.group_parts_data[g][xkey]
-            x_lbls_pos.append(xi)
+            # x_lbls_pos.append(xi)
             for _ in range(max_exps_per_group):
                 x.append(xi)
-        x_lbls = None
 
-        ys = np.full((n_groups*max_exps_per_group, n_metrics), np.nan)
+        ys = np.full((n_groups * max_exps_per_group, n_metrics), np.nan)
 
         for i, (group, expids) in enumerate(sorted(groupings.items())):
             for j, exp in enumerate(expids):
                 for k, m in enumerate(metrics_set):
-                    ys[i*max_exps_per_group + j, k] = self.metrics_by_exp[exp].get(m, float('nan'))
+                    ys[i * max_exps_per_group + j, k] = self.metrics_by_exp[exp].get(m, float('nan'))
 
         plot_widget.clear()
         for i, metric in enumerate(metrics_set):
@@ -246,9 +245,9 @@ class MetricsView(BaseExpView):
             )
         plot_widget.axes.set_ylabel('Error')
         plot_widget.axes.set_xlabel(xkey)
-        plot_widget.axes.set_xticks(
-           x, x_lbls,
-        )
+        # plot_widget.axes.set_xticks(
+        #     x, x_lbls,
+        # )
         plot_widget.legend()
         plot_widget.axes.set_yscale('log')
         plot_widget.redraw_and_flush()
