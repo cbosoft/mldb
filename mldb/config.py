@@ -4,9 +4,17 @@ import os
 
 class PostgreSQLConfig:
 
-    backend = 'postgresql'
+    backend = "postgresql"
 
-    def __init__(self, root_dir: str, host: str, password: str, user: str, database: str, port=5432):
+    def __init__(
+        self,
+        root_dir: str,
+        host: str,
+        password: str,
+        user: str,
+        database: str,
+        port=5432,
+    ):
         self.root_dir = root_dir
         self.host = host
         self.password = password
@@ -20,22 +28,23 @@ class PostgreSQLConfig:
             password=self.password,
             user=self.user,
             database=self.database,
-            port=self.port
+            port=self.port,
         )
 
     @classmethod
     def load(cls):
-        config_name = '.mldb_config.json'
+        config_name = ".mldb_config.json"
 
-        config_path = os.path.join(os.getenv('HOME'), config_name)
+        config_path = os.path.join(os.getenv("HOME"), config_name)
 
         with open(config_path) as f:
             config_data = json.load(f)
 
-        if 'backend' in config_data:
-            assert config_data['backend'] == 'postgresql', \
-                'Only postgresql backed is supported. SQLite support has been removed.'
-            config_data = config_data['postgresql']
+        if "backend" in config_data:
+            assert (
+                config_data["backend"] == "postgresql"
+            ), "Only postgresql backed is supported. SQLite support has been removed."
+            config_data = config_data["postgresql"]
 
         return cls(**config_data)
 

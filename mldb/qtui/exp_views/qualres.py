@@ -7,10 +7,11 @@ from .view_base import BaseExpView
 
 
 class ExpQualresView(BaseExpView):
-
     def __init__(self, *expids):
         if len(expids) > 1:
-            print('Too many experiments se;lected: only showing qualitative results for one (1) experiment.')
+            print(
+                "Too many experiments se;lected: only showing qualitative results for one (1) experiment."
+            )
             expids = expids[:1]
         super().__init__(*expids)
         self.expid = expids[0]
@@ -30,15 +31,21 @@ class ExpQualresView(BaseExpView):
             pw.redraw_and_flush()
 
     def plot_qualres(self, plotwidget: PlotWidget, *, kind: str, **data):
-        if kind == 'vector':
+        if kind == "vector":
             self.plot_vector(plotwidget, **data)
         else:
             raise NotImplementedError(f'plot kind not yet supported: "{kind}"')
 
     @staticmethod
-    def plot_vector(plot: PlotWidget, *,
-                    xlabel: str, ylabel: str, xscale='linear', yscale='linear',
-                    data: list):
+    def plot_vector(
+        plot: PlotWidget,
+        *,
+        xlabel: str,
+        ylabel: str,
+        xscale="linear",
+        yscale="linear",
+        data: list,
+    ):
         plot.axes.set_xlabel(xlabel)
         plot.axes.set_ylabel(ylabel)
         plot.axes.set_xscale(xscale)
@@ -49,14 +56,14 @@ class ExpQualresView(BaseExpView):
         #  - Colour by GT/class?
 
         for i, datum in enumerate(data):
-            colour = f'C{i%10}'
+            colour = f"C{i%10}"
             datum: dict
-            if 'x' not in datum:
+            if "x" not in datum:
                 x = np.geomspace(1, 1e3, 100)
             else:
-                x = datum['x']
+                x = datum["x"]
 
-            plot.plot(x, datum['output'], '-', color=colour)
+            plot.plot(x, datum["output"], "-", color=colour)
 
-            if 'target' in datum:
-                plot.plot(x, datum['target'], '--', color=colour)
+            if "target" in datum:
+                plot.plot(x, datum["target"], "--", color=colour)

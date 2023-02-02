@@ -1,7 +1,14 @@
 from collections import defaultdict
 
 import scipy.stats
-from PySide6.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QComboBox, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import (
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QComboBox,
+    QTableWidget,
+    QTableWidgetItem,
+)
 import numpy as np
 from sklearn.manifold import TSNE
 
@@ -12,18 +19,18 @@ from .view_base import BaseExpView
 
 def wrap(s: str) -> str:
     MAX = 75
-    s = s.replace('_2018', '').replace('_lim50', '').replace('PolyS,PolyS', 'PolyS')
+    s = s.replace("_2018", "").replace("_lim50", "").replace("PolyS,PolyS", "PolyS")
     if len(s) > MAX:
         # split on ';' before MAX or just at MAX if ';' can't be found.
-        pivot = s.rfind(';', 0, MAX) + 1
+        pivot = s.rfind(";", 0, MAX) + 1
         if not pivot:
             pivot = MAX
-        s = s[:pivot] + '\n' + s[pivot:]
+        s = s[:pivot] + "\n" + s[pivot:]
     return s
 
 
 class MetricsView(BaseExpView):
-    GROUP_QUERY = 'SELECT * FROM EXPGROUPS WHERE EXPID=\'{}\';'
+    GROUP_QUERY = "SELECT * FROM EXPGROUPS WHERE EXPID='{}';"
 
     def __init__(self, *expids: str):
         super().__init__(*expids)
@@ -36,7 +43,7 @@ class MetricsView(BaseExpView):
         self.error_plot_alt = PlotWidget()
         self.corr_plot = PlotWidget()
         self.tsne_plot = PlotWidget()
-        self.tabs.addTab(self.error_plot, 'Errors')
+        self.tabs.addTab(self.error_plot, "Errors")
         self.group_parts_selector = QComboBox()
         self.group_parts_set = set()
         self.group_parts_data = dict()
@@ -44,10 +51,10 @@ class MetricsView(BaseExpView):
         alt_plot_container.layout = QVBoxLayout(alt_plot_container)
         alt_plot_container.layout.addWidget(self.error_plot_alt)
         alt_plot_container.layout.addWidget(self.group_parts_selector)
-        self.tabs.addTab(alt_plot_container, 'Errors (alt)')
-        self.tabs.addTab(self.corr_plot, 'Correlations')
+        self.tabs.addTab(alt_plot_container, "Errors (alt)")
+        self.tabs.addTab(self.corr_plot, "Correlations")
         self.metric_table = QTableWidget()
-        self.tabs.addTab(self.metric_table, 'Table')
+        self.tabs.addTab(self.metric_table, "Table")
 
         self.errors = set()
         self.corrs = set()
@@ -61,28 +68,25 @@ class MetricsView(BaseExpView):
     def refresh(self):
         self.readiness = -len(self.expids)
         for expid in self.expids:
-            DBExpMetrics(
-                expid,
-                self.metrics_returned
-            ).start()
+            DBExpMetrics(expid, self.metrics_returned).start()
 
     def metrics_returned(self, d):
         if not d:
             self.readiness += 1
             return
 
-        expid = d['expid']
+        expid = d["expid"]
 
-        for m, _ in d['data'].items():
+        for m, _ in d["data"].items():
             lowercase_m = m.lower()
             # if 'error' in the name (or MSE, RMSE), then the metric is an error value.
             # otherwise, it must be a correlation value.
-            if 'error' in lowercase_m or 'mse' in lowercase_m:
+            if "error" in lowercase_m or "mse" in lowercase_m:
                 self.errors.add(m)
             else:
                 self.corrs.add(m)
 
-        self.metrics_by_exp[expid] = d['data']
+        self.metrics_by_exp[expid] = d["data"]
         DBQuery(self.GROUP_QUERY.format(expid), self.grouping_returned).start()
 
     def extract_data_from_groups(self, groups):
@@ -133,7 +137,9 @@ class MetricsView(BaseExpView):
 
     def fill_table(self):
         self.metric_table.setColumnCount(6)
-        self.metric_table.setHorizontalHeaderLabels(['Group', 'Metric', 'Mean', 'Median', 'Min', 'Max'])
+        self.metric_table.setHorizontalHeaderLabels(
+            ["Group", "Metric", "Mean", "Median", "Min", "Max"]
+        )
         self.metric_table.setRowCount(0)
         r = 0
         for i, (group, expids) in enumerate(sorted(self.exps_by_group.items())):
@@ -156,39 +162,47 @@ class MetricsView(BaseExpView):
 
     def sort_exps_by_group(self):
         self.exps_by_group = defaultdict(list)
+        print(self.groupings_by_exp)
         for exp, groups in self.groupings_by_exp.items():
             ng = len(groups)
 
             if not ng:
-                print(f'no groups for {exp}')
+                print(f"no groups for {exp}")
                 if not self.groupings_by_exp:
                     self.exps_by_group[exp].append(exp)
             else:
                 if ng > 1:
-                    print(f'experiment {exp} has many groups; choosing first ({groups[0]})')
+                    print(
+                        f"experiment {exp} has many groups; choosing first ({groups[0]})"
+                    )
                 self.exps_by_group[groups[0]].append(exp)
 
     def plot_errors(self):
         self.plot_metric_set(self.error_plot, sorted(self.errors), self.exps_by_group)
-        self.plot_metric_set_alt(self.error_plot_alt, sorted(self.errors), self.exps_by_group)
+        self.plot_metric_set_alt(
+            self.error_plot_alt, sorted(self.errors), self.exps_by_group
+        )
 
     def plot_corrs(self):
         self.plot_metric_set(self.corr_plot, sorted(self.corrs), self.exps_by_group)
 
-    def plot_metric_set(self, plot_widget: PlotWidget, metrics_set: list, groupings: dict):
+    def plot_metric_set(
+        self, plot_widget: PlotWidget, metrics_set: list, groupings: dict
+    ):
 
-        assert groupings, f'Groupings is unset!'
+        assert groupings, f"Groupings is unset!"
 
         # table.clear()
         # table.setColumnCount(2)
         # table.setRowCount((len(self.expids)+1)*len(self.low_metrics))
         labels = [
             # ('\n'*(i % 2)) +
-            (t
-             .replace('metrics.', '')
-             .replace('test', 'Te')
-             .replace('valid', 'V')
-             .replace('MeanAbsoluteError', 'MAE'))
+            (
+                t.replace("metrics.", "")
+                .replace("test", "Te")
+                .replace("valid", "V")
+                .replace("MeanAbsoluteError", "MAE")
+            )
             for i, t in enumerate(metrics_set)
         ]
 
@@ -198,31 +212,30 @@ class MetricsView(BaseExpView):
             for exp in expids:
                 for j, m in enumerate(metrics_set):
                     x.append(j)
-                    y.append(self.metrics_by_exp[exp].get(m, float('nan')))
-            plot_widget.axes.plot(
-                x, y, 'o', color=f'C{i}', label=wrap(group)
-            )
+                    y.append(self.metrics_by_exp[exp].get(m, float("nan")))
+            plot_widget.axes.plot(x, y, "o", color=f"C{i}", label=wrap(group))
             edges = np.arange(len(metrics_set) + 1) - 0.5
             x_means = np.arange(len(metrics_set))
             y_means = scipy.stats.binned_statistic(x, y, bins=edges)[0]
             for xi, yi in zip(x_means, y_means):
                 xi = np.add([-0.2, 0.2], xi)
                 yi = [yi, yi]
-                plot_widget.axes.plot(
-                    xi, yi, '--', color=f'C{i}'
-                )
+                plot_widget.axes.plot(xi, yi, "--", color=f"C{i}")
         lbl_x = np.arange(len(metrics_set))
         plot_widget.axes.set_xticks(
-            lbl_x, labels,
+            lbl_x,
+            labels,
         )
-        plot_widget.axes.set_ylabel('Error')
-        plot_widget.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02))
-        plot_widget.axes.set_yscale('log')
+        plot_widget.axes.set_ylabel("Error")
+        plot_widget.legend(loc="lower center", bbox_to_anchor=(0.5, 1.02))
+        plot_widget.axes.set_yscale("log")
         plot_widget.redraw_and_flush()
 
-    def plot_metric_set_alt(self, plot_widget: PlotWidget, metrics_set: list, groupings: dict):
+    def plot_metric_set_alt(
+        self, plot_widget: PlotWidget, metrics_set: list, groupings: dict
+    ):
 
-        assert groupings, f'Groupings is unset!'
+        assert groupings, f"Groupings is unset!"
 
         groups = sorted(groupings)
         n_groups = len(groups)
@@ -245,42 +258,41 @@ class MetricsView(BaseExpView):
         for i, (group, expids) in enumerate(sorted(groupings.items())):
             for j, exp in enumerate(expids):
                 for k, m in enumerate(metrics_set):
-                    ys[i * max_exps_per_group + j, k] = self.metrics_by_exp[exp].get(m, float('nan'))
+                    ys[i * max_exps_per_group + j, k] = self.metrics_by_exp[exp].get(
+                        m, float("nan")
+                    )
 
         plot_widget.clear()
         for i, metric in enumerate(metrics_set):
-            plot_widget.axes.plot(
-                x, ys[:, i], 'o', color=f'C{i}', label=metric
-            )
-        plot_widget.axes.set_ylabel('Error')
+            plot_widget.axes.plot(x, ys[:, i], "o", color=f"C{i}", label=metric)
+        plot_widget.axes.set_ylabel("Error")
         plot_widget.axes.set_xlabel(xkey)
         # plot_widget.axes.set_xticks(
         #     x, x_lbls,
         # )
         plot_widget.legend()
-        plot_widget.axes.set_yscale('log')
+        plot_widget.axes.set_yscale("log")
         plot_widget.redraw_and_flush()
 
     def plot_tsne(self, metrics_set):
         data, group_idxs = [], []
         for i, (group, expids) in enumerate(self.exps_by_group.items()):
             for expid in expids:
-                data.append([
-                    self.metrics_by_exp[expid][m]
-                    for m in metrics_set
-                    if (expid in self.metrics_by_exp) and (m in self.metrics_by_exp[expid])
-                ])
+                data.append(
+                    [
+                        self.metrics_by_exp[expid][m]
+                        for m in metrics_set
+                        if (expid in self.metrics_by_exp)
+                        and (m in self.metrics_by_exp[expid])
+                    ]
+                )
                 group_idxs.append(i)
         data = np.array(data)
         if len(data) < 2:
-            print('Not enough data for TSNE metrics plot')
+            print("Not enough data for TSNE metrics plot")
             return
         groups = list(self.exps_by_group.keys())
-        tsne = TSNE(
-            perplexity=min(len(data) - 1, 5),
-            learning_rate='auto',
-            init='pca'
-        )
+        tsne = TSNE(perplexity=min(len(data) - 1, 5), learning_rate="auto", init="pca")
         res = tsne.fit_transform(data)
 
         x = res[:, 0]
@@ -292,12 +304,12 @@ class MetricsView(BaseExpView):
             xy_by_group[group][1].append(y)
 
         for group, (x, y) in xy_by_group.items():
-            self.tsne_plot.axes.plot(x, y, 'o', alpha=0.5, label=group)
+            self.tsne_plot.axes.plot(x, y, "o", alpha=0.5, label=group)
 
-        self.tsne_plot.axes.set_xlabel('Component 1')
-        self.tsne_plot.axes.set_ylabel('Component 2')
+        self.tsne_plot.axes.set_xlabel("Component 1")
+        self.tsne_plot.axes.set_ylabel("Component 2")
         self.tsne_plot.redraw_and_flush()
 
         tab_names = {self.tabs.tabText(i) for i in range(self.tabs.count())}
-        if 'TSNE' not in tab_names:
-            self.tabs.addTab(self.tsne_plot, 'TSNE')
+        if "TSNE" not in tab_names:
+            self.tabs.addTab(self.tsne_plot, "TSNE")

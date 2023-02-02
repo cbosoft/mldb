@@ -2,10 +2,15 @@ from typing import List
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QWidget, QDialog,
-    QVBoxLayout, QHBoxLayout,
+    QWidget,
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
     QSpinBox,
-    QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView
+    QTabWidget,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
 )
 
 from .plot_widget import PlotWidget
@@ -67,7 +72,7 @@ def plot_widget_and_table(grouping_table=False):
 
 
 class ExpCompareAndViewDialog(QDialog):
-    QUERY = ''
+    QUERY = ""
 
     def __init__(self, parent: QWidget, expids: List[str], *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
@@ -79,7 +84,7 @@ class ExpCompareAndViewDialog(QDialog):
         self.tabs = QTabWidget()
         self.layout.addWidget(self.tabs)
 
-        self.tabs.addTab(ExpConfigView(*expids), 'Config')
-        self.tabs.addTab(ExpLossAndLRView(*expids), 'Loss v Epoch')
-        self.tabs.addTab(MetricsView(*expids), 'Metrics')
-        self.tabs.addTab(ExpQualresView(*expids), 'QualRes')
+        self.tabs.addTab(ExpConfigView(*expids), "Config")
+        self.tabs.addTab(ExpLossAndLRView(*expids), "Loss v Epoch")
+        self.tabs.addTab(MetricsView(*expids), "Metrics")
+        self.tabs.addTab(ExpQualresView(*expids), "QualRes")

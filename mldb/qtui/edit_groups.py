@@ -1,8 +1,15 @@
 from typing import List
 
 from PySide6.QtWidgets import (
-    QDialog, QWidget, QHBoxLayout,
-    QVBoxLayout, QListWidget, QListWidgetItem, QPushButton, QLineEdit, QLabel
+    QDialog,
+    QWidget,
+    QHBoxLayout,
+    QVBoxLayout,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QLineEdit,
+    QLabel,
 )
 from PySide6.QtCore import Signal
 
@@ -23,16 +30,16 @@ class GroupEditDialog(QDialog):
         self.i = -1
 
         self.layout = QVBoxLayout(self)
-        self.layout.addWidget(QLabel(', '.join(self.expids)))
+        self.layout.addWidget(QLabel(", ".join(self.expids)))
 
         hb = QWidget()
         hb.layout = QHBoxLayout(hb)
         self.txt_new_group = QLineEdit()
         hb.layout.addWidget(self.txt_new_group)
-        self.btn_new_group = QPushButton('+')
+        self.btn_new_group = QPushButton("+")
         self.btn_new_group.clicked.connect(self.add_group)
         hb.layout.addWidget(self.btn_new_group)
-        self.btn_rem_group = QPushButton('-')
+        self.btn_rem_group = QPushButton("-")
         self.btn_rem_group.clicked.connect(self.rem_group)
         hb.layout.addWidget(self.btn_rem_group)
 
@@ -47,7 +54,9 @@ class GroupEditDialog(QDialog):
         self.groupset = None
         self.i = len(self.expids)
         for expid in self.expids:
-            DBMethod(Database.get_groups_of_exp, (expid,), slot=self.groups_returned).start()
+            DBMethod(
+                Database.get_groups_of_exp, (expid,), slot=self.groups_returned
+            ).start()
 
     def groups_returned(self, groups):
         if self.groupset is None:
@@ -67,11 +76,13 @@ class GroupEditDialog(QDialog):
         DBMethod(
             Database.add_to_group,
             *[(expid, group) for expid in self.expids],
-            slot=self.refresh_group_list).start()
+            slot=self.refresh_group_list
+        ).start()
 
     def rem_group(self):
         selected_group = self.group_list.currentItem().text()
         DBMethod(
             Database.remove_from_group,
             *[(expid, selected_group) for expid in self.expids],
-            slot=self.refresh_group_list).start()
+            slot=self.refresh_group_list
+        ).start()

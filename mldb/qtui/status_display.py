@@ -2,7 +2,6 @@ from PySide6 import QtWidgets
 
 
 class StatusDisplay:
-
     def __init__(self, parent: QtWidgets.QMainWindow):
         self.parent = parent
         self.status_bar = parent.statusBar()
@@ -42,8 +41,5 @@ class StatusDisplay:
 
     def show_error_message(self, error_message: str):
         QtWidgets.QMessageBox(
-            QtWidgets.QMessageBox.Warning,
-            'Error',
-            error_message,
-            parent=self.parent
+            QtWidgets.QMessageBox.Warning, "Error", error_message, parent=self.parent
         ).show()

@@ -1,8 +1,15 @@
 from typing import List, Union
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QTableWidget,
-    QTableWidgetItem, QPushButton, QLineEdit, QHeaderView
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QComboBox,
+    QTableWidget,
+    QTableWidgetItem,
+    QPushButton,
+    QLineEdit,
+    QHeaderView,
 )
 from PySide6.QtCore import Signal, Qt
 import psycopg2.sql
@@ -14,8 +21,11 @@ from .edit_groups import GroupEditDialog
 
 class ExperimentListWidget(QWidget):
     QUERIES = dict(
-        all=('All Experiments', 'SELECT * FROM STATUS ORDER BY EXPID DESC;'),
-        active=('Active Experiments', 'SELECT * FROM STATUS WHERE STATUS=\'TRAINING\' ORDER BY EXPID DESC;'),
+        all=("All Experiments", "SELECT * FROM STATUS ORDER BY EXPID DESC;"),
+        active=(
+            "Active Experiments",
+            "SELECT * FROM STATUS WHERE STATUS='TRAINING' ORDER BY EXPID DESC;",
+        ),
     )
 
     status_signal = Signal(str)
@@ -36,14 +46,14 @@ class ExperimentListWidget(QWidget):
         self.layout.addWidget(search_box)
         search_box.layout = QHBoxLayout(search_box)
         search_text_input = QLineEdit()
-        search_button = QPushButton('Search')
+        search_button = QPushButton("Search")
         search_button.clicked.connect(lambda: self.search(search_text_input.text()))
         search_box.layout.addWidget(search_text_input)
         search_box.layout.addWidget(search_button)
 
         self.table_experiments = QTableWidget()
         self.layout.addWidget(self.table_experiments)
-        cols = ['Exp. ID', 'Status', 'Groups']
+        cols = ["Exp. ID", "Status", "Groups"]
         self.table_experiments.setColumnCount(len(cols))
         self.table_experiments.setHorizontalHeaderLabels(cols)
         header = self.table_experiments.horizontalHeader()
@@ -60,9 +70,9 @@ class ExperimentListWidget(QWidget):
         btn_box = QWidget()
         btn_box.layout = QHBoxLayout(btn_box)
         self.view_button = QPushButton()
-        self.delete_button = QPushButton('Delete Exp')
+        self.delete_button = QPushButton("Delete Exp")
         self.delete_button.clicked.connect(self.delete_selected)
-        self.group_button = QPushButton('Group')
+        self.group_button = QPushButton("Group")
         self.group_button.clicked.connect(self.edit_groups)
         btn_box.layout.addWidget(self.view_button)
         btn_box.layout.addWidget(self.delete_button)
@@ -92,7 +102,7 @@ class ExperimentListWidget(QWidget):
         DBMethod(
             Database.delete_experiment,
             *[(e,) for e in exp_ids],
-            slot=self.remove_expid_from_table
+            slot=self.remove_expid_from_table,
         ).start()
 
     def remove_expid_from_table(self, expid):
@@ -105,14 +115,14 @@ class ExperimentListWidget(QWidget):
         exps = self.get_selected_experiments()
         if len(exps):
             if len(exps) > 1:
-                ttl = 'Compare experiments'
+                ttl = "Compare experiments"
             else:
-                ttl = 'View experiment'
+                ttl = "View experiment"
             self.view_button.setEnabled(True)
             self.group_button.setEnabled(True)
             self.delete_button.setEnabled(True)
         else:
-            ttl = 'No experiment selected'
+            ttl = "No experiment selected"
             self.view_button.setEnabled(False)
             self.group_button.setEnabled(False)
             self.delete_button.setEnabled(False)
@@ -123,12 +133,12 @@ class ExperimentListWidget(QWidget):
         if exps:
             ExpCompareAndViewDialog(self, exps).show()
         else:
-            print('No experiments')
+            print("No experiments")
 
     def run_query(self, query: Union[str, psycopg2.sql.Composable]):
         # self.table_experiments.clear()
         self.table_experiments.setRowCount(0)
-        self.set_status('Querying database...')
+        self.set_status("Querying database...")
         self.set_progress(10)
 
         query = DBQuery(query)
@@ -137,17 +147,19 @@ class ExperimentListWidget(QWidget):
 
     @staticmethod
     def parse_sql_from_search(sq: str) -> psycopg2.sql.Literal:
-        sq = sq.replace(' ', '%')
-        sq = f'%{sq}%'
+        sq = sq.replace(" ", "%")
+        sq = f"%{sq}%"
         return psycopg2.sql.Literal(sq)
 
     def search(self, search_query: str):
         condition = self.parse_sql_from_search(search_query)
-        query = 'SELECT * FROM STATUS WHERE STATUS.EXPID IN ' \
-                '(SELECT EXPID FROM EXPGROUPS WHERE GROUPNAME LIKE {condition}) ' \
-                'OR STATUS.EXPID LIKE {condition}' \
-                'OR STATUS.STATUS LIKE {condition}' \
-                'ORDER BY EXPID DESC;'
+        query = (
+            "SELECT * FROM STATUS WHERE STATUS.EXPID IN "
+            "(SELECT EXPID FROM EXPGROUPS WHERE GROUPNAME LIKE {condition}) "
+            "OR STATUS.EXPID LIKE {condition}"
+            "OR STATUS.STATUS LIKE {condition}"
+            "ORDER BY EXPID DESC;"
+        )
         query = psycopg2.sql.SQL(query).format(condition=condition)
         self.run_query(query)
 
@@ -165,9 +177,9 @@ class ExperimentListWidget(QWidget):
                 status_wi.setToolTip(status)
                 self.table_experiments.setItem(i, 0, expid_wi)
                 self.table_experiments.setItem(i, 1, status_wi)
-            self.set_status(f'{n} experiments found.')
+            self.set_status(f"{n} experiments found.")
         else:
-            self.set_status('No experiments found!')
+            self.set_status("No experiments found!")
 
         self.set_progress(100)
 
@@ -179,7 +191,7 @@ class ExperimentListWidget(QWidget):
         self.refresh_groups()
 
     def refresh_groups(self):
-        DBQuery('SELECT * FROM EXPGROUPS;', self.display_groups).start()
+        DBQuery("SELECT * FROM EXPGROUPS;", self.display_groups).start()
 
     def display_groups(self, rv):
         groups_by_exp = {}
@@ -191,9 +203,9 @@ class ExperimentListWidget(QWidget):
         for i in range(self.table_experiments.rowCount()):
             e = self.table_experiments.item(i, 0).text()
             if e in groups_by_exp:
-                groups = ', '.join(groups_by_exp[e])
+                groups = ", ".join(groups_by_exp[e])
             else:
-                groups = ''
+                groups = ""
             groups_wi = QTableWidgetItem(groups)
             groups_wi.setToolTip(groups)
             self.table_experiments.setItem(i, 2, groups_wi)
@@ -202,23 +214,26 @@ class ExperimentListWidget(QWidget):
         assert self.models is None
         self.models = set()
         for expid in expids:
-            model_name = (expid
-                          .replace('_', '')
-                          .replace('-', '')
-                          .replace('fold', '')
-                          .strip('0123456789'))
+            model_name = (
+                expid.replace("_", "")
+                .replace("-", "")
+                .replace("fold", "")
+                .strip("0123456789")
+            )
             self.models.add(model_name)
 
         for model in self.models:
             self.query_selector.addItem(
-                f'Model {model}',
-                userData=f'SELECT * FROM STATUS WHERE EXPID LIKE \'%%{model}%%\'')
+                f"Model {model}",
+                userData=f"SELECT * FROM STATUS WHERE EXPID LIKE '%%{model}%%'",
+            )
 
     def populate_groups(self, groups):
         for group, *_ in set(groups):
             self.query_selector.addItem(
-                f'Group {group}',
-                userData=f'SELECT STATUS.EXPID, STATUS.STATUS FROM STATUS INNER JOIN EXPGROUPS ON STATUS.EXPID = EXPGROUPS.EXPID WHERE GROUPNAME=\'{group}\';')
+                f"Group {group}",
+                userData=f"SELECT STATUS.EXPID, STATUS.STATUS FROM STATUS INNER JOIN EXPGROUPS ON STATUS.EXPID = EXPGROUPS.EXPID WHERE GROUPNAME='{group}';",
+            )
 
     def set_status(self, s: str):
         self.status_signal.emit(s)

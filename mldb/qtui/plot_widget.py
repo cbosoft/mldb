@@ -1,6 +1,6 @@
 import matplotlib
 
-matplotlib.use('Qt5Agg')
+matplotlib.use("Qt5Agg")
 
 from matplotlib import pyplot as plt
 
@@ -14,11 +14,11 @@ from PySide6 import QtCore
 from .util import is_dark_theme
 
 if is_dark_theme():
-    plt.style.use('dark_background')
+    plt.style.use("dark_background")
 
 
 class PlotWidget(FigureCanvasQTAgg):
-    selection_changed = QtCore.Signal(float, float, bool, name='selection_changed')
+    selection_changed = QtCore.Signal(float, float, bool, name="selection_changed")
 
     def __init__(self, dpi=100, can_select=False, ax_rect=(0.2, 0.2, 0.75, 0.7)):
         fig = Figure(dpi=dpi)
@@ -32,9 +32,13 @@ class PlotWidget(FigureCanvasQTAgg):
 
         self.can_select = can_select
         self.is_selecting = False
-        selector_kws = dict(color='k', alpha=0.1, transform=self.axes.transAxes)
-        self.selection_left: PolyCollection = self.axes.fill_betweenx([-2., 2.], -2., -2., **selector_kws)
-        self.selection_right: PolyCollection = self.axes.fill_betweenx([-2., 2.], 2., 2., **selector_kws)
+        selector_kws = dict(color="k", alpha=0.1, transform=self.axes.transAxes)
+        self.selection_left: PolyCollection = self.axes.fill_betweenx(
+            [-2.0, 2.0], -2.0, -2.0, **selector_kws
+        )
+        self.selection_right: PolyCollection = self.axes.fill_betweenx(
+            [-2.0, 2.0], 2.0, 2.0, **selector_kws
+        )
 
     @property
     def twax(self):
@@ -110,8 +114,8 @@ class PlotWidget(FigureCanvasQTAgg):
     def update_selection(self):
         sleft, sright = sorted(self.selection_axes)
         if sleft == sright:
-            sleft = -2.
-            sright = 2.
+            sleft = -2.0
+            sright = 2.0
             has_selection = False
         else:
             has_selection = True

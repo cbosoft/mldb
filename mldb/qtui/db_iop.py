@@ -9,7 +9,9 @@ class DBQuery(QObject):
 
     def __init__(self, query: str, slot=None):
         super().__init__()
-        self.query = _DBQueryWorker(query, lambda rows: self.results_returned.emit(rows))
+        self.query = _DBQueryWorker(
+            query, lambda rows: self.results_returned.emit(rows)
+        )
         if slot:
             self.results_returned.connect(slot)
 
@@ -18,7 +20,6 @@ class DBQuery(QObject):
 
 
 class _DBQueryWorker(QRunnable):
-
     def __init__(self, query: str, cb):
         super().__init__()
         self.query = query
@@ -40,7 +41,9 @@ class DBExpDetails(QObject):
 
     def __init__(self, expid: str, slot=None):
         super().__init__()
-        self.query = _DBExpDetailsWorker(expid, lambda rv: self.results_returned.emit(rv))
+        self.query = _DBExpDetailsWorker(
+            expid, lambda rv: self.results_returned.emit(rv)
+        )
         if slot:
             self.results_returned.connect(slot)
 
@@ -49,7 +52,6 @@ class DBExpDetails(QObject):
 
 
 class _DBExpDetailsWorker(QRunnable):
-
     def __init__(self, expid: str, cb):
         super().__init__()
         self.expid = expid
@@ -70,7 +72,9 @@ class DBExpMetrics(QObject):
 
     def __init__(self, expid: str, slot=None):
         super().__init__()
-        self.query = _DBExpMetricsWorker(expid, lambda metrics: self.results_returned.emit(metrics))
+        self.query = _DBExpMetricsWorker(
+            expid, lambda metrics: self.results_returned.emit(metrics)
+        )
         if slot:
             self.results_returned.connect(slot)
 
@@ -79,7 +83,6 @@ class DBExpMetrics(QObject):
 
 
 class _DBExpMetricsWorker(QRunnable):
-
     def __init__(self, expid: str, cb):
         super().__init__()
         self.expid = expid
@@ -100,7 +103,9 @@ class DBExpQualResults(QObject):
 
     def __init__(self, expid: str, slot=None, plots=None):
         super().__init__()
-        self.query = _DBExpQualResultsWorker(expid, lambda qualres: self.results_returned.emit(qualres), plots)
+        self.query = _DBExpQualResultsWorker(
+            expid, lambda qualres: self.results_returned.emit(qualres), plots
+        )
         if slot:
             self.results_returned.connect(slot)
 
@@ -109,7 +114,6 @@ class DBExpQualResults(QObject):
 
 
 class _DBExpQualResultsWorker(QRunnable):
-
     def __init__(self, expid: str, cb, plots=None):
         super().__init__()
         self.expid = expid
@@ -120,9 +124,12 @@ class _DBExpQualResultsWorker(QRunnable):
         with Database() as db:
             qualres = []
             if not self.plotids:
-                db.cursor.execute('SELECT PLOTID FROM QUALITATIVERESULTSMETA WHERE EXPID=%s', (self.expid,))
+                db.cursor.execute(
+                    "SELECT PLOTID FROM QUALITATIVERESULTSMETA WHERE EXPID=%s",
+                    (self.expid,),
+                )
                 self.plotids = db.cursor.fetchall()
-                print('plot ids', self.plotids)
+                print("plot ids", self.plotids)
 
             for plotid in self.plotids:
                 plotid = plotid[0]
@@ -139,7 +146,9 @@ class DBExpHyperParams(QObject):
 
     def __init__(self, expid: str, slot=None):
         super().__init__()
-        self.query = _DBExpHyperParamsWorker(expid, lambda hparams: self.results_returned.emit(hparams))
+        self.query = _DBExpHyperParamsWorker(
+            expid, lambda hparams: self.results_returned.emit(hparams)
+        )
         if slot:
             self.results_returned.connect(slot)
 
@@ -148,7 +157,6 @@ class DBExpHyperParams(QObject):
 
 
 class _DBExpHyperParamsWorker(QRunnable):
-
     def __init__(self, expid: str, cb):
         super().__init__()
         self.expid = expid
@@ -169,7 +177,9 @@ class DBMethod(QObject):
 
     def __init__(self, method, *args: tuple, slot=None):
         super().__init__()
-        self.query = _DBMethodWorker(method, *args, cb=lambda rows: self.results_returned.emit(rows))
+        self.query = _DBMethodWorker(
+            method, *args, cb=lambda rows: self.results_returned.emit(rows)
+        )
         if slot:
             self.results_returned.connect(slot)
 
@@ -178,7 +188,6 @@ class DBMethod(QObject):
 
 
 class _DBMethodWorker(QRunnable):
-
     def __init__(self, method, *argss, cb):
         super().__init__()
         self.method = method
