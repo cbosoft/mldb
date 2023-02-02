@@ -85,28 +85,37 @@ class MetricsView(BaseExpView):
         self.metrics_by_exp[expid] = d['data']
         DBQuery(self.GROUP_QUERY.format(expid), self.grouping_returned).start()
 
+    def extract_data_from_groups(self, groups):
+        for group in groups:
+            parts = group.split(";")
+            self.group_parts_data[group] = dict()
+            for part in parts:
+                try:
+                    k, v = part.split("=")
+                except ValueError:
+                    continue
+                self.group_parts_set.add(k)
+
+                if not v:
+                    v = 0.0
+
+                try:
+                    v = float(v)
+                except:
+                    pass
+
+                self.group_parts_data[group][k] = v
+
     def grouping_returned(self, rows):
         try:
             expid = rows[0][0]
             groups = [row[1] for row in rows]
 
-            for group in groups:
-                parts = group.split(';')
-                self.group_parts_data[group] = dict()
-                for part in parts:
-                    k, v = part.split('=')
-                    self.group_parts_set.add(k)
-
-                    try:
-                        v = float(v)
-                    except:
-                        pass
-
-                    self.group_parts_data[group][k] = v
+            self.extract_data_from_groups(groups)
 
             self.groupings_by_exp[expid] = groups
         except Exception as e:
-            print(e)
+            print(type(e), e)
 
         self.readiness += 1
 
