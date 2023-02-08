@@ -1,0 +1,6 @@
+numpy
+psycopg2
+matplotlib
+simplejson
+scipy
+scikit-learn
