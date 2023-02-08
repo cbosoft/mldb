@@ -19,4 +19,5 @@ def is_dark_theme() -> bool:
     if sys.platform == "darwin":
         return is_dark_theme_macos()
     else:
-        raise NotImplementedError(f"Unsupported platform {sys.platform}")
+        return False
+        # raise NotImplementedError(f"Unsupported platform {sys.platform}")
