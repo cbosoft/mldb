@@ -35,6 +35,11 @@ class PostgreSQLConfig:
     def load(cls):
         config_name = ".mldb_config.json"
 
+        home = os.getenv("HOME")
+        if home is None:
+            home = os.getenv("USERPROFILE")
+        assert home is not None, "Could not find home!"
+
         config_path = os.path.join(os.getenv("HOME"), config_name)
 
         with open(config_path) as f:
