@@ -1,8 +1,10 @@
 import os
 import json
+from typing import List
 
 import numpy as np
 from psycopg2 import connect
+import psycopg2.sql as sql
 
 from ..config import CONFIG
 from .schema import SCHEMA, TABLES
@@ -296,8 +298,18 @@ class Database:
         self.cursor.execute(self.COMMAND_ADD_TO_GROUP, (exp_id, group))
         self.conn.commit()
 
+    def add_many_to_group(self, expids_and_groups):
+        for expid, group in expids_and_groups:
+            self.cursor.execute(self.COMMAND_ADD_TO_GROUP, (expid, group))
+        self.conn.commit()
+
     def remove_from_group(self, exp_id: str, group: str):
         self.cursor.execute(self.COMMAND_REMOVE_FROM_GROUP, (exp_id, group))
+        self.conn.commit()
+
+    def remove_many_from_group(self, expids_and_groups):
+        for expid, group in expids_and_groups:
+            self.cursor.execute(self.COMMAND_REMOVE_FROM_GROUP, (expid, group))
         self.conn.commit()
 
     def get_group(self, group: str):
@@ -307,6 +319,20 @@ class Database:
 
     def get_groups_of_exp(self, expid: str):
         self.cursor.execute(self.COMMAND_GET_GROUPS_OF_EXP, (expid,))
+        groups = [r[0] for r in self.cursor.fetchall()]
+        return groups
+
+    def get_groups_of_many_exps(self, expids: List[str]):
+        condition = sql.SQL("")
+        for i, expid in enumerate(expids):
+            expid = sql.Literal(expid)
+            if i:
+                condition += sql.SQL(" OR ")
+            condition += sql.SQL(" EXPID={expid} ").format(expid=expid)
+        q = sql.SQL(
+            "SELECT DISTINCT GROUPNAME FROM EXPGROUPS WHERE {condition};"
+        ).format(condition=condition)
+        self.cursor.execute(q)
         groups = [r[0] for r in self.cursor.fetchall()]
         return groups
 

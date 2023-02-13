@@ -30,7 +30,7 @@ class GroupEditDialog(QDialog):
         self.i = -1
 
         self.layout = QVBoxLayout(self)
-        self.layout.addWidget(QLabel(", ".join(self.expids)))
+        # self.layout.addWidget(QLabel(", ".join(self.expids)))
 
         hb = QWidget()
         hb.layout = QHBoxLayout(hb)
@@ -52,37 +52,30 @@ class GroupEditDialog(QDialog):
 
     def refresh_group_list(self, *_, **__):
         self.groupset = None
-        self.i = len(self.expids)
-        for expid in self.expids:
-            DBMethod(
-                Database.get_groups_of_exp, (expid,), slot=self.groups_returned
-            ).start()
+        DBMethod(
+            Database.get_groups_of_many_exps, (self.expids,), slot=self.groups_returned
+        ).start()
 
     def groups_returned(self, groups):
-        if self.groupset is None:
-            self.groupset = set(groups)
-        else:
-            self.groupset = self.groupset.intersection(groups)
+        self.groupset = groups
 
-        self.i -= 1
-        if self.i < 1:
-            self.group_list.clear()
-            for group in self.groupset:
-                self.group_list.addItem(QListWidgetItem(group))
-            self.groups_changed.emit()
+        self.group_list.clear()
+        for group in self.groupset:
+            self.group_list.addItem(QListWidgetItem(group))
+        self.groups_changed.emit()
 
     def add_group(self):
         group = self.txt_new_group.text()
         DBMethod(
-            Database.add_to_group,
-            *[(expid, group) for expid in self.expids],
-            slot=self.refresh_group_list
+            Database.add_many_to_group,
+            ([(expid, group) for expid in self.expids],),
+            slot=self.refresh_group_list,
         ).start()
 
     def rem_group(self):
         selected_group = self.group_list.currentItem().text()
         DBMethod(
-            Database.remove_from_group,
-            *[(expid, selected_group) for expid in self.expids],
-            slot=self.refresh_group_list
+            Database.remove_many_from_group,
+            ([(expid, selected_group) for expid in self.expids],),
+            slot=self.refresh_group_list,
         ).start()
