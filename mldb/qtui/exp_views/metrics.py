@@ -187,10 +187,10 @@ class MetricsView(BaseExpView):
         return filtered
 
     def plot_errors(self):
-        self.plot_metric_set(self.error_plot, sorted(self.errors), self.exps_by_group)
-        self.plot_metric_set_alt(
-            self.error_plot_alt, sorted(self.errors), self.exps_by_group
-        )
+        errs = sorted(self.errors)
+        filtered_errs = self.filter_metrics(errs)
+        self.plot_metric_set(self.error_plot, filtered_errs, self.exps_by_group)
+        self.plot_metric_set_alt(self.error_plot_alt, filtered_errs, self.exps_by_group)
 
     def plot_corrs(self):
         self.plot_metric_set(self.corr_plot, sorted(self.corrs), self.exps_by_group)
