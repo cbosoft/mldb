@@ -1,4 +1,5 @@
 from typing import List, Union
+import re
 
 from PySide6.QtWidgets import (
     QWidget,
@@ -7,6 +8,8 @@ from PySide6.QtWidgets import (
     QComboBox,
     QTableWidget,
     QTableWidgetItem,
+    QTreeWidget,
+    QTreeWidgetItem,
     QPushButton,
     QLineEdit,
     QHeaderView,
@@ -54,21 +57,21 @@ class ExperimentListWidget(QWidget):
             'Search! e.g. "RegressExp !PLS" -> "RegressExp" AND NOT "PLS"'
         )
 
-        self.table_experiments = QTableWidget()
-        self.layout.addWidget(self.table_experiments)
+        self.experiments_view = QTreeWidget()
+        self.layout.addWidget(self.experiments_view)
         cols = ["Exp. ID", "Status", "Groups"]
-        self.table_experiments.setColumnCount(len(cols))
-        self.table_experiments.setHorizontalHeaderLabels(cols)
-        header = self.table_experiments.horizontalHeader()
+        self.experiments_view.setColumnCount(len(cols))
+        self.experiments_view.setHeaderLabels(cols)
+        header = self.experiments_view.header()
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QHeaderView.Stretch)
-        # self.table_experiments.horizontalHeader().section(True)
-        # self.table_experiments.horizontalHeader().setDefaultSectionSize(400)
-        self.table_experiments.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.table_experiments.doubleClicked.connect(self.view_or_compare_exp)
-        self.table_experiments.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table_experiments.itemSelectionChanged.connect(self.exp_selection_changed)
+        self.experiments_view.setSelectionBehavior(QTreeWidget.SelectRows)
+        self.experiments_view.setSelectionMode(
+            QTreeWidget.SelectionMode.ExtendedSelection
+        )
+        self.experiments_view.doubleClicked.connect(self.view_or_compare_exp)
+        self.experiments_view.itemSelectionChanged.connect(self.exp_selection_changed)
 
         btn_box = QWidget()
         btn_box.layout = QHBoxLayout(btn_box)
@@ -86,19 +89,21 @@ class ExperimentListWidget(QWidget):
         self.query_changed(0)
         self.exp_selection_changed()
 
-        self.models = None
-
     def edit_groups(self):
-        selection = self.table_experiments.selectedIndexes()
-        expids = [i.data() for i in selection if i.column() == 0]
+        expids = self.get_selected_experiments()
         dia = GroupEditDialog(self, expids)
         dia.groups_changed.connect(self.refresh_groups)
         dia.show()
 
     def get_selected_experiments(self) -> List[str]:
-        selection = self.table_experiments.selectedIndexes()
-        selection = [i.data() for i in selection if i.column() == 0]
-        return selection
+        selection = self.experiments_view.selectedItems()
+        expids = []
+        for item in selection:
+            es = item.data(0, Qt.UserRole)
+            if es is not None:
+                expids.extend(es)
+        expids = sorted(set(expids))
+        return expids
 
     def delete_selected(self):
         exp_ids = self.get_selected_experiments()
@@ -109,7 +114,8 @@ class ExperimentListWidget(QWidget):
         ).start()
 
     def remove_expid_from_table(self, expid):
-        items = self.table_experiments.findItems(expid, Qt.MatchFlag.MatchExactly & 1)
+        raise NotImplementedError
+        items = self.experiments_view.findItems(expid, Qt.MatchFlag.MatchExactly & 1)
         rows = set(i.row() for i in items)
         assert len(rows) == 1
         self.table_experiments.removeRow(list(rows)[0])
@@ -138,9 +144,8 @@ class ExperimentListWidget(QWidget):
         else:
             print("No experiments")
 
-    def run_query(self, query: Union[str, psycopg2.sql.Composable]):
-        # self.table_experiments.clear()
-        self.table_experiments.setRowCount(0)
+    def run_query(self, query: Union[str, sql.Composable]):
+        self.experiments_view.clear()
         self.set_status("Querying database...")
         self.set_progress(10)
 
@@ -182,26 +187,34 @@ class ExperimentListWidget(QWidget):
         self.run_query(self.query_selector.currentData())
 
     def display_experiments(self, rows):
-        n = len(rows)
-        self.table_experiments.setRowCount(n)
+        FOLD_RE = re.compile(r"(.*)_(fold_?\d+|final|mean)")
+        exps = {}
+        for (expid, status) in rows:
+            m = FOLD_RE.match(expid)
+            if m:
+                base_expid = m.group(1)
+                if base_expid not in exps:
+                    exps[base_expid] = []
+                exps[base_expid].append((expid, status))
+            else:
+                exps[expid] = [(expid, status)]
+
+        n = len(exps)
         if n:
-            for i, (expid, status) in enumerate(rows):
-                expid_wi = QTableWidgetItem(expid)
-                expid_wi.setToolTip(expid)
-                status_wi = QTableWidgetItem(status)
-                status_wi.setToolTip(status)
-                self.table_experiments.setItem(i, 0, expid_wi)
-                self.table_experiments.setItem(i, 1, status_wi)
-            self.set_status(f"{n} experiments found.")
+            for i, (base_expid, data) in enumerate(exps.items()):
+                all_status = set([s for _, s in data])
+                all_status = ", ".join(sorted(all_status))
+                wi = QTreeWidgetItem([f"{base_expid}x{len(data)}", all_status])
+                wi.setData(0, Qt.UserRole, [e for e, _ in data])
+                self.experiments_view.addTopLevelItem(wi)
+                for (expid, status) in data:
+                    cwi = QTreeWidgetItem([expid, status])
+                    cwi.setData(0, Qt.UserRole, [expid])
+                    wi.addChild(cwi)
         else:
             self.set_status("No experiments found!")
 
         self.set_progress(100)
-
-        # if self.models is None:
-        #     # No model cache, likely this is the first call
-        #     # so this is the all exp query and can use it to populate models
-        #     self.populate_models([e for e, _ in rows])
 
         self.refresh_groups()
 
@@ -215,33 +228,20 @@ class ExperimentListWidget(QWidget):
                 groups_by_exp[e] = []
             groups_by_exp[e].append(g)
 
-        for i in range(self.table_experiments.rowCount()):
-            e = self.table_experiments.item(i, 0).text()
-            if e in groups_by_exp:
-                groups = ", ".join(groups_by_exp[e])
-            else:
-                groups = ""
-            groups_wi = QTableWidgetItem(groups)
-            groups_wi.setToolTip(groups)
-            self.table_experiments.setItem(i, 2, groups_wi)
-
-    def populate_models(self, expids):
-        assert self.models is None
-        self.models = set()
-        for expid in expids:
-            model_name = (
-                expid.replace("_", "")
-                .replace("-", "")
-                .replace("fold", "")
-                .strip("0123456789")
-            )
-            self.models.add(model_name)
-
-        for model in self.models:
-            self.query_selector.addItem(
-                f"Model {model}",
-                userData=f"SELECT * FROM STATUS WHERE EXPID LIKE '%%{model}%%'",
-            )
+        for i in range(self.experiments_view.topLevelItemCount()):
+            tli = self.experiments_view.topLevelItem(i)
+            tli_groups = set()
+            for j in range(tli.childCount()):
+                ci = tli.child(j)
+                expid = ci.data(0, Qt.UserRole)[0]
+                try:
+                    groups = groups_by_exp[expid]
+                    tli_groups.update(groups)
+                    ci.setText(2, " | ".join(groups))
+                except KeyError:
+                    pass
+            if tli_groups:
+                tli.setText(2, " | ".join(sorted(tli_groups)))
 
     def populate_groups(self, groups):
         for group, *_ in set(groups):
