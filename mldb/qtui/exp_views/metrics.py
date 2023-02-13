@@ -179,8 +179,10 @@ class MetricsView(BaseExpView):
             else:
                 if ng > 1:
                     print(
-                        f"experiment {exp} has many groups; choosing first ({groups[0]})"
+                        f"experiment {exp} has many groups; choosing last ({groups[-1]})"
                     )
+                self.exps_by_group[groups[-1]].append(exp)
+
     def filter_metrics(self, metrics: str):
         filt_re = re.compile(self.metrics_filter.text())
         filtered = [k for k in metrics if filt_re.match(k)]
