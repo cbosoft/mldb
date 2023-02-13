@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
 )
 from PySide6.QtCore import Signal, Qt
-import psycopg2.sql
+import psycopg2.sql as sql
 
 from .db_iop import DBQuery, DBMethod, Database
 from .exp_compare_and_vew import ExpCompareAndViewDialog
@@ -50,6 +50,9 @@ class ExperimentListWidget(QWidget):
         search_button.clicked.connect(lambda: self.search(search_text_input.text()))
         search_box.layout.addWidget(search_text_input)
         search_box.layout.addWidget(search_button)
+        search_text_input.setPlaceholderText(
+            'Search! e.g. "RegressExp !PLS" -> "RegressExp" AND NOT "PLS"'
+        )
 
         self.table_experiments = QTableWidget()
         self.layout.addWidget(self.table_experiments)
@@ -146,22 +149,34 @@ class ExperimentListWidget(QWidget):
         query.start()
 
     @staticmethod
-    def parse_sql_from_search(sq: str) -> psycopg2.sql.Literal:
-        sq = sq.replace(" ", "%")
-        sq = f"%{sq}%"
-        return psycopg2.sql.Literal(sq)
+    def parse_sql_from_search(sq: str) -> sql.Literal:
+        parts = sq.split(" ")
+        condition = sql.SQL("")
+
+        for i, part in enumerate(parts):
+            if part.startswith("!"):
+                part = part[1:]
+                negative = True
+            else:
+                negative = False
+            term = sql.Literal(f"%{part}%")
+            c = sql.SQL(
+                " (STATUS.EXPID IN (SELECT EXPID FROM EXPGROUPS WHERE GROUPNAME LIKE {term}) "
+                "OR STATUS.EXPID LIKE {term}"
+                "OR STATUS.STATUS LIKE {term}) "
+            )
+            if i:
+                condition += sql.SQL(" AND ")
+            if negative:
+                condition += sql.SQL(" NOT ")
+            condition += c.format(term=term)
+
+        return condition
 
     def search(self, search_query: str):
+        query = sql.SQL("SELECT * FROM STATUS WHERE {condition} ORDER BY EXPID DESC;")
         condition = self.parse_sql_from_search(search_query)
-        query = (
-            "SELECT * FROM STATUS WHERE STATUS.EXPID IN "
-            "(SELECT EXPID FROM EXPGROUPS WHERE GROUPNAME LIKE {condition}) "
-            "OR STATUS.EXPID LIKE {condition}"
-            "OR STATUS.STATUS LIKE {condition}"
-            "ORDER BY EXPID DESC;"
-        )
-        query = psycopg2.sql.SQL(query).format(condition=condition)
-        self.run_query(query)
+        self.run_query(query.format(condition=condition))
 
     def query_changed(self, _: int):
         self.run_query(self.query_selector.currentData())
