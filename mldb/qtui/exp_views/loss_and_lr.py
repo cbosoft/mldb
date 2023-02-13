@@ -1,5 +1,13 @@
 import matplotlib.pyplot as plt
-from PySide6.QtWidgets import QHBoxLayout
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QVBoxLayout,
+    QCheckBox,
+    QWidget,
+    QScrollArea,
+    QSizePolicy,
+)
+from PySide6.QtCore import Qt
 import numpy as np
 
 from ..plot_widget import PlotWidget
@@ -9,12 +17,34 @@ from .view_base import BaseExpView
 
 class ExpLossAndLRView(BaseExpView):
     def __init__(self, *expids: str):
-        if len(expids) > 4:
-            print("Too many experiments for plotting losses; only showing first three.")
-            expids = expids[:4]
         super().__init__(*expids)
+
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
+
+        expselector_par = QScrollArea()
+        expselector_par.setMaximumWidth(300)
+        expselector = QWidget()
+        expselector.layout = QVBoxLayout(expselector)
+        expselector_par.setWidget(expselector)
+        expselector_par.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        self.layout.addWidget(expselector)
+        self.exp_shown = {}
+        self.data_by_exp = {}
+        for i, expid in enumerate(expids):
+            chk = QCheckBox(expid)
+            shown = i < 3
+            chk.setCheckState(
+                Qt.CheckState.Checked if shown else Qt.CheckState.Unchecked
+            )
+            self.exp_shown[expid] = shown
+
+            def lwi_checked(v, *, e=expid):
+                self.exp_shown[e] = v
+                self.replot()
+
+            chk.stateChanged.connect(lwi_checked)
+            expselector.layout.addWidget(chk)
 
         # plot of loss against epoch, with secondary axis showing learning rate.
         self.plot = PlotWidget(ax_rect=(0.2, 0.2, 0.6, 0.7))
@@ -28,11 +58,11 @@ class ExpLossAndLRView(BaseExpView):
         self.layout.addWidget(self.plot)
 
         self.refresh()
-        self.i = 0.0
+        self.i = 0
 
     def refresh(self):
         self.plot.clear()
-        self.i = 0.0
+        self.i = 0
         for expid in self.expids:
             DBExpDetails(expid, self.details_returned).start()
 
@@ -64,19 +94,34 @@ class ExpLossAndLRView(BaseExpView):
             lr_epochs = None
             lr_values = None
 
-        self.update_plots(
-            expid,
-            train_epochs,
-            train_losses,
-            valid_epochs,
-            valid_losses,
-            lr_epochs,
-            lr_values,
+        self.data_by_exp[expid] = dict(
+            expid=expid,
+            t_e=train_epochs,
+            t_l=train_losses,
+            v_e=valid_epochs,
+            v_l=valid_losses,
+            lr_e=lr_epochs,
+            lr_v=lr_values,
         )
+
+        self.i += 1
+
+        if self.i == len(self.expids):
+            self.replot()
+
+    def replot(self):
+        self.i = 0.0
+        self.plot.clear()
+        for expid, data in self.data_by_exp.items():
+            if self.exp_shown[expid]:
+                self.update_plots(**data)
+
+        self.legend()
+        self.plot.redraw_and_flush()
 
     def update_plots(self, expid, t_e, t_l, v_e, v_l, lr_e, lr_v):
 
-        if self.i > 0:
+        if self.i > 0.0:
             self.loss_ax.axhline(self.i, color="k", alpha=0.2)
 
         mx, mn = -100, 100
@@ -128,9 +173,6 @@ class ExpLossAndLRView(BaseExpView):
 
         self.plot.axes.text(0, self.i + 0.1, expid, ha="left", va="bottom")
         self.i += 1.1
-
-        self.legend()
-        self.plot.redraw_and_flush()
 
     def legend(self):
         self.plot.legend(
