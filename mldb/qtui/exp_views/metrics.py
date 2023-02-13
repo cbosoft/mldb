@@ -1,4 +1,5 @@
 from collections import defaultdict
+import re
 
 import scipy.stats
 from PySide6.QtWidgets import (
@@ -8,6 +9,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QTableWidget,
     QTableWidgetItem,
+    QLineEdit,
 )
 import numpy as np
 from sklearn.manifold import TSNE
@@ -45,6 +47,11 @@ class MetricsView(BaseExpView):
         self.tsne_plot = PlotWidget()
         self.tabs.addTab(self.error_plot, "Errors")
         self.group_parts_selector = QComboBox()
+        self.metrics_filter = QLineEdit()
+        self.metrics_filter.setPlaceholderText("Type a regex filter here...")
+        print(self.metrics_filter.text())
+        self.metrics_filter.textEdited.connect(self.plot_metrics)
+        self.layout.addWidget(self.metrics_filter)
         self.group_parts_set = set()
         self.group_parts_data = dict()
         alt_plot_container = QWidget()
@@ -162,7 +169,6 @@ class MetricsView(BaseExpView):
 
     def sort_exps_by_group(self):
         self.exps_by_group = defaultdict(list)
-        print(self.groupings_by_exp)
         for exp, groups in self.groupings_by_exp.items():
             ng = len(groups)
 
@@ -175,7 +181,10 @@ class MetricsView(BaseExpView):
                     print(
                         f"experiment {exp} has many groups; choosing first ({groups[0]})"
                     )
-                self.exps_by_group[groups[0]].append(exp)
+    def filter_metrics(self, metrics: str):
+        filt_re = re.compile(self.metrics_filter.text())
+        filtered = [k for k in metrics if filt_re.match(k)]
+        return filtered
 
     def plot_errors(self):
         self.plot_metric_set(self.error_plot, sorted(self.errors), self.exps_by_group)
