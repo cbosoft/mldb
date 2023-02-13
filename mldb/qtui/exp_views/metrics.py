@@ -126,7 +126,7 @@ class MetricsView(BaseExpView):
 
             self.groupings_by_exp[expid] = groups
         except Exception as e:
-            print(type(e), e)
+            print(type(e), e, rows)
 
         self.readiness += 1
 
