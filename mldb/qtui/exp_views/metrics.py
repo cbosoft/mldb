@@ -257,7 +257,7 @@ class MetricsView(BaseExpView):
         x = []
         # x_lbls_pos = []
         for g in groups:
-            xi = self.group_parts_data[g][xkey]
+            xi = self.group_parts_data[g].get(xkey, float("nan"))
             # x_lbls_pos.append(xi)
             for _ in range(max_exps_per_group):
                 x.append(xi)
