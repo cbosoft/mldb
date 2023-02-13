@@ -28,7 +28,7 @@ class ExpLossAndLRView(BaseExpView):
         expselector.layout = QVBoxLayout(expselector)
         expselector_par.setWidget(expselector)
         expselector_par.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
-        self.layout.addWidget(expselector)
+        self.layout.addWidget(expselector_par)
         self.exp_shown = {}
         self.data_by_exp = {}
         for i, expid in enumerate(expids):
