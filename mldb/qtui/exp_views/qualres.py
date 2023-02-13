@@ -10,7 +10,7 @@ class ExpQualresView(BaseExpView):
     def __init__(self, *expids):
         if len(expids) > 1:
             print(
-                "Too many experiments se;lected: only showing qualitative results for one (1) experiment."
+                "Too many experiments selected: only showing qualitative results for one (1) experiment."
             )
             expids = expids[:1]
         super().__init__(*expids)
@@ -55,6 +55,9 @@ class ExpQualresView(BaseExpView):
         #  - Colour by epoch?
         #  - Colour by GT/class?
 
+        last_epoch = max([d["epoch"] for d in data])
+        data = [d for d in data if d["epoch"] == last_epoch]
+
         for i, datum in enumerate(data):
             colour = f"C{i%10}"
             datum: dict
@@ -64,6 +67,5 @@ class ExpQualresView(BaseExpView):
                 x = datum["x"]
 
             plot.plot(x, datum["output"], "-", color=colour)
-
             if "target" in datum:
                 plot.plot(x, datum["target"], "--", color=colour)
