@@ -246,7 +246,7 @@ class MetricsView(BaseExpView):
 
         assert groupings, f"Groupings is unset!"
 
-        groups = sorted(groupings)
+        groups = list(groupings.keys())
         n_groups = len(groups)
         n_metrics = len(metrics_set)
 
