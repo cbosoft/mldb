@@ -60,13 +60,11 @@ class PlotWidget(FigureCanvasQTAgg):
         self.figure.canvas.flush_events()
 
     def clear_axes(self):
-        for a in self.axes.get_lines():
-            a.remove()
+        self.axes.clear()
 
     def clear_twax(self):
-        if self._twax:
-            for a in self._twax.get_lines():
-                a.remove()
+        if self._twax is not None:
+            self._twax.clear()
 
     def clear(self):
         self.clear_axes()
