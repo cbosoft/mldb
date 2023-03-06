@@ -12,6 +12,7 @@ import numpy as np
 
 from ..plot_widget import PlotWidget
 from ..db_iop import DBExpDetails
+from ..util import is_dark_theme
 from .view_base import BaseExpView
 
 
@@ -27,7 +28,9 @@ class ExpLossAndLRView(BaseExpView):
         expselector = QWidget()
         expselector.layout = QVBoxLayout(expselector)
         expselector_par.setWidget(expselector)
-        expselector_par.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        expselector_par.setWidgetResizable(True)
+        expselector.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
         self.layout.addWidget(expselector_par)
         self.exp_shown = {}
         self.data_by_exp = {}
@@ -47,14 +50,9 @@ class ExpLossAndLRView(BaseExpView):
             expselector.layout.addWidget(chk)
 
         # plot of loss against epoch, with secondary axis showing learning rate.
-        self.plot = PlotWidget(ax_rect=(0.2, 0.2, 0.6, 0.7))
+        self.plot = PlotWidget()
         self.loss_ax = self.plot.axes
-        self.loss_ax.set_yticks([])
-        self.loss_ax.set_title("Loss v Epoch")
-        self.loss_ax.set_xlabel("Epoch [#]")
-        self.loss_ax.set_ylabel("Loss [AU]")
-        self.lr_ax = self.plot.axes.twinx()
-        self.lr_ax.set_ylabel("Learning rate")
+        self.lr_ax = self.plot.twax
         self.layout.addWidget(self.plot)
 
         self.refresh()
@@ -116,6 +114,10 @@ class ExpLossAndLRView(BaseExpView):
             if self.exp_shown[expid]:
                 self.update_plots(**data)
 
+        self.loss_ax.set_yticks([])
+        self.loss_ax.set_title("Loss v Epoch")
+        self.loss_ax.set_xlabel("Epoch [#]")
+        self.lr_ax.set_yticks([])
         self.legend()
         self.plot.redraw_and_flush()
 
@@ -143,9 +145,9 @@ class ExpLossAndLRView(BaseExpView):
             self.loss_ax.plot(t_e, slt_l + self.i, "C0")
             self.loss_ax.text(
                 t_e[-1],
-                slt_l[-1] + self.i + 0.1,
+                self.i + 0.1,
                 f"{t_l[-1]:.2e}",
-                ha="right",
+                ha="left",
                 va="bottom",
                 color="C0",
             )
@@ -155,19 +157,19 @@ class ExpLossAndLRView(BaseExpView):
             self.loss_ax.plot(v_e, slv_l + self.i, "C1")
             self.loss_ax.text(
                 t_e[-1],
-                slv_l[-1] + self.i + 0.1,
+                self.i + 0.6,
                 f"{v_l[-1]:.2e}",
-                ha="right",
+                ha="left",
                 va="bottom",
                 color="C1",
             )
 
-        if lr_v is not None:
+        if lr_v is not None and len(lr_v) > 0:
             self.lr_ax.plot(
                 lr_e,
                 np.divide(lr_v, np.max(lr_v)) + self.i,
                 zorder=-10,
-                color="k",
+                color="0.9" if is_dark_theme() else "k",
                 ls="--",
             )
 
