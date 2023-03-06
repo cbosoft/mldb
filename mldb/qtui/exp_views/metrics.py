@@ -44,12 +44,13 @@ class MetricsView(BaseExpView):
         self.error_plot = PlotWidget()
         self.error_plot_alt = PlotWidget()
         self.corr_plot = PlotWidget()
+        self.corr_plot_alt = PlotWidget()
         self.tsne_plot = PlotWidget()
         self.tabs.addTab(self.error_plot, "Errors")
-        self.group_parts_selector = QComboBox()
+        self.error_parts_selector = QComboBox()
+        self.corr_parts_selector = QComboBox()
         self.metrics_filter = QLineEdit()
         self.metrics_filter.setPlaceholderText("Type a regex filter here...")
-        print(self.metrics_filter.text())
         self.metrics_filter.textEdited.connect(self.plot_metrics)
         self.layout.addWidget(self.metrics_filter)
         self.group_parts_set = set()
@@ -57,9 +58,14 @@ class MetricsView(BaseExpView):
         alt_plot_container = QWidget()
         alt_plot_container.layout = QVBoxLayout(alt_plot_container)
         alt_plot_container.layout.addWidget(self.error_plot_alt)
-        alt_plot_container.layout.addWidget(self.group_parts_selector)
+        alt_plot_container.layout.addWidget(self.error_parts_selector)
         self.tabs.addTab(alt_plot_container, "Errors (alt)")
         self.tabs.addTab(self.corr_plot, "Correlations")
+        alt_plot_container = QWidget()
+        alt_plot_container.layout = QVBoxLayout(alt_plot_container)
+        alt_plot_container.layout.addWidget(self.corr_plot_alt)
+        alt_plot_container.layout.addWidget(self.corr_parts_selector)
+        self.tabs.addTab(alt_plot_container, "Correlations (alt)")
         self.metric_table = QTableWidget()
         self.tabs.addTab(self.metric_table, "Table")
 
@@ -131,8 +137,10 @@ class MetricsView(BaseExpView):
         self.readiness += 1
 
         if self.readiness >= 0:
-            self.group_parts_selector.addItems(sorted(self.group_parts_set))
-            self.group_parts_selector.currentIndexChanged.connect(self.plot_errors)
+            self.error_parts_selector.addItems(sorted(self.group_parts_set))
+            self.error_parts_selector.currentIndexChanged.connect(self.plot_errors)
+            self.corr_parts_selector.addItems(sorted(self.group_parts_set))
+            self.corr_parts_selector.currentIndexChanged.connect(self.plot_corrs)
             self.plot_metrics()
 
     def plot_metrics(self):
@@ -192,16 +200,32 @@ class MetricsView(BaseExpView):
         errs = sorted(self.errors)
         filtered_errs = self.filter_metrics(errs)
         self.plot_metric_set(self.error_plot, filtered_errs, self.exps_by_group)
-        self.plot_metric_set_alt(self.error_plot_alt, filtered_errs, self.exps_by_group)
+        self.plot_metric_set_alt(
+            self.error_plot_alt,
+            filtered_errs,
+            self.exps_by_group,
+            self.error_parts_selector,
+        )
 
     def plot_corrs(self):
-        self.plot_metric_set(self.corr_plot, sorted(self.corrs), self.exps_by_group)
+        corrs = sorted(self.corrs)
+        filtered_corrs = self.filter_metrics(corrs)
+        self.plot_metric_set(self.corr_plot, filtered_corrs, self.exps_by_group)
+        self.plot_metric_set_alt(
+            self.corr_plot_alt,
+            filtered_corrs,
+            self.exps_by_group,
+            self.corr_parts_selector,
+        )
 
     def plot_metric_set(
         self, plot_widget: PlotWidget, metrics_set: list, groupings: dict
     ):
 
         assert groupings, f"Groupings is unset!"
+
+        if not metrics_set:
+            return
 
         # table.clear()
         # table.setColumnCount(2)
@@ -224,6 +248,7 @@ class MetricsView(BaseExpView):
                 for j, m in enumerate(metrics_set):
                     x.append(j)
                     y.append(self.metrics_by_exp[exp].get(m, float("nan")))
+
             plot_widget.axes.plot(x, y, "o", color=f"C{i}", label=wrap(group))
             edges = np.arange(len(metrics_set) + 1) - 0.5
             x_means = np.arange(len(metrics_set))
@@ -239,11 +264,16 @@ class MetricsView(BaseExpView):
         )
         plot_widget.axes.set_ylabel("Error")
         plot_widget.legend(loc="lower center", bbox_to_anchor=(0.5, 1.02))
-        plot_widget.axes.set_yscale("log")
+        if plot_widget.axes.get_ylim()[0] > 0.0:
+            plot_widget.axes.set_yscale("log")
         plot_widget.redraw_and_flush()
 
     def plot_metric_set_alt(
-        self, plot_widget: PlotWidget, metrics_set: list, groupings: dict
+        self,
+        plot_widget: PlotWidget,
+        metrics_set: list,
+        groupings: dict,
+        selector: QComboBox,
     ):
 
         assert groupings, f"Groupings is unset!"
@@ -254,7 +284,7 @@ class MetricsView(BaseExpView):
 
         max_exps_per_group = max([len(expids) for expids in groupings.values()])
 
-        xkey = self.group_parts_selector.currentText()
+        xkey = selector.currentText()
 
         x = []
         x_lbls_pos = []
@@ -264,7 +294,7 @@ class MetricsView(BaseExpView):
             for _ in range(max_exps_per_group):
                 x.append(xi)
 
-        ys = np.full((n_groups * max_exps_per_group, n_metrics), np.nan)
+        # ys = np.full((n_groups * max_exps_per_group, n_metrics), np.nan)
 
         plot_widget.clear()
         for i, m in enumerate(metrics_set):
@@ -284,10 +314,11 @@ class MetricsView(BaseExpView):
         plot_widget.axes.set_xlabel(xkey)
         plot_widget.axes.set_xticks(x_lbls_pos, [str(xi) for xi in x_lbls_pos])
         plot_widget.legend()
-        plot_widget.axes.set_yscale("log")
+        # plot_widget.axes.set_yscale("log")
         plot_widget.redraw_and_flush()
 
     def plot_tsne(self, metrics_set):
+        return  # TSNE plot disabled 2023-02-23
         data, group_idxs = [], []
         for i, (group, expids) in enumerate(self.exps_by_group.items()):
             for expid in expids:
