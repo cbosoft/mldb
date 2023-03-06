@@ -14,7 +14,13 @@ from PySide6.QtWidgets import (
 )
 
 from .plot_widget import PlotWidget
-from .exp_views import ExpLossAndLRView, ExpConfigView, MetricsView, ExpQualresView
+from .exp_views import (
+    ExpLossAndLRView,
+    ExpConfigView,
+    MetricsView,
+    ExpQualresView,
+    ExportData,
+)
 
 
 class GroupTable(QTableWidget):
@@ -88,3 +94,4 @@ class ExpCompareAndViewDialog(QDialog):
         self.tabs.addTab(ExpLossAndLRView(*expids), "Loss v Epoch")
         self.tabs.addTab(MetricsView(*expids), "Metrics")
         self.tabs.addTab(ExpQualresView(*expids), "QualRes")
+        self.tabs.addTab(ExportData(*expids), "Export")
