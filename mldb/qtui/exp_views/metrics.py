@@ -286,23 +286,25 @@ class MetricsView(BaseExpView):
 
         xkey = selector.currentText()
 
-        x = []
         x_lbls_pos = []
         for g in groups:
             xi = self.group_parts_data[g].get(xkey, float("nan"))
             x_lbls_pos.append(xi)
-            for _ in range(max_exps_per_group):
-                x.append(xi)
 
-        # ys = np.full((n_groups * max_exps_per_group, n_metrics), np.nan)
+        if isinstance(x_lbls_pos[0], str):
+            x_lbls = x_lbls_pos
+            x_lbls_pos = list(range(len(x_lbls)))
+        else:
+            x_lbls = [str(v).rstrip("0").rstrip(".") for v in x_lbls_pos]
 
         plot_widget.clear()
         for i, m in enumerate(metrics_set):
             x, y = [], []
             for group, expids in sorted(groupings.items()):
-                x.extend(
-                    [self.group_parts_data[group].get(xkey, float("nan"))] * len(expids)
-                )
+                xi = self.group_parts_data[group].get(xkey, float("nan"))
+                if isinstance(xi, str):
+                    xi = x_lbls.index(xi)
+                x.extend([xi] * len(expids))
                 y.extend(
                     [self.metrics_by_exp[exp].get(m, float("nan")) for exp in expids]
                 )
@@ -312,7 +314,9 @@ class MetricsView(BaseExpView):
         #     plot_widget.axes.plot(x, ys[:, i], "o", color=f"C{i}", label=metric)
         plot_widget.axes.set_ylabel("Error")
         plot_widget.axes.set_xlabel(xkey)
-        plot_widget.axes.set_xticks(x_lbls_pos, [str(xi) for xi in x_lbls_pos])
+        plot_widget.axes.set_xticks(x_lbls_pos, x_lbls)
+        print(x_lbls_pos)
+        print(x_lbls)
         plot_widget.legend()
         # plot_widget.axes.set_yscale("log")
         plot_widget.redraw_and_flush()
