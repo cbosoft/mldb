@@ -315,8 +315,6 @@ class MetricsView(BaseExpView):
         plot_widget.axes.set_ylabel("Error")
         plot_widget.axes.set_xlabel(xkey)
         plot_widget.axes.set_xticks(x_lbls_pos, x_lbls)
-        print(x_lbls_pos)
-        print(x_lbls)
         plot_widget.legend()
         # plot_widget.axes.set_yscale("log")
         plot_widget.redraw_and_flush()
