@@ -107,9 +107,14 @@ class MetricsView(BaseExpView):
             parts = group.split(";")
             self.group_parts_data[group] = dict()
             for part in parts:
+                if "=" not in part:
+                    continue
                 try:
-                    k, v = part.split("=")
-                except ValueError:
+                    kv = part.split("=")
+                    k = kv[0]
+                    v = "=".join(kv[1:])
+                except ValueError as e:
+                    print(e)
                     continue
                 self.group_parts_set.add(k)
 
@@ -261,6 +266,7 @@ class MetricsView(BaseExpView):
         plot_widget.axes.set_xticks(
             lbl_x,
             labels,
+            rotation=45,
         )
         plot_widget.axes.set_ylabel("Error")
         plot_widget.legend(loc="lower center", bbox_to_anchor=(0.5, 1.02))
@@ -314,7 +320,9 @@ class MetricsView(BaseExpView):
         #     plot_widget.axes.plot(x, ys[:, i], "o", color=f"C{i}", label=metric)
         plot_widget.axes.set_ylabel("Error")
         plot_widget.axes.set_xlabel(xkey)
-        plot_widget.axes.set_xticks(x_lbls_pos, x_lbls)
+        plot_widget.axes.set_xticks(
+            x_lbls_pos, x_lbls, rotation=45, ha="right", va="top"
+        )
         plot_widget.legend()
         # plot_widget.axes.set_yscale("log")
         plot_widget.redraw_and_flush()
