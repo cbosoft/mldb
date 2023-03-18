@@ -44,6 +44,8 @@ class ExpQualresView(BaseExpView):
     def plot_qualres(self, plotwidget: PlotWidget, *, kind: str, **data):
         if kind == "vector":
             self.plot_vector(plotwidget, **data)
+        elif kind == "scalar":
+            self.plot_scalar(plotwidget, **data)
         elif kind == "guess":
             if isinstance(data["data"][0]["output"], float):
                 self.plot_scalar(plotwidget, **data)
@@ -68,6 +70,37 @@ class ExpQualresView(BaseExpView):
                 self.plot_scalar(plotwidget, **data)
         else:
             raise NotImplementedError(f'plot kind not yet supported: "{kind}"')
+
+    @staticmethod
+    def plot_scalar(
+        plot: PlotWidget,
+        *,
+        indx=None,
+        xlabel="targets",
+        ylabel="outputs",
+        xscale="linear",
+        yscale="linear",
+        data: list,
+    ):
+        plot.axes.set_xlabel(xlabel)
+        plot.axes.set_ylabel(ylabel)
+        plot.axes.set_xscale(xscale)
+        plot.axes.set_yscale(yscale)
+
+        last_epoch = max([d["epoch"] for d in data])
+        data = [d for d in data if d["epoch"] == last_epoch]
+
+        if indx is not None:
+            outputs = np.array([d["output"][0][indx] for d in data]).flatten()
+            targets = np.array([d["target"][0][indx] for d in data]).flatten()
+        else:
+            outputs = [d["output"] for d in data]
+            targets = [d["target"] for d in data]
+
+        some_targets = [min(targets), max(targets)]
+        plot.plot(some_targets, some_targets, "k--")
+        plot.plot(targets, outputs, "o")
+        plot.redraw_and_flush()
 
     @staticmethod
     def plot_vector(
