@@ -125,7 +125,7 @@ class _DBExpQualResultsWorker(QRunnable):
             qualres = []
             if not self.plotids:
                 db.cursor.execute(
-                    "SELECT PLOTID FROM QUALITATIVERESULTSMETA WHERE EXPID=%s",
+                    "SELECT DISTINCT PLOTID FROM QUALITATIVERESULTS WHERE EXPID=%s",
                     (self.expid,),
                 )
                 self.plotids = db.cursor.fetchall()
