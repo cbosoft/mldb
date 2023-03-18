@@ -80,8 +80,9 @@ class ExportData(BaseExpView):
                     if isinstance(v, str):
                         v = f'"{v}"'
                     gdata[k] = v
-            mdata = self.data[expid]
-            self.data[expid] = {**gdata, **mdata}
+            if expid in self.data:
+                mdata = self.data[expid]
+                self.data[expid] = {**gdata, **mdata}
 
         self.btn.setEnabled(True)
 
