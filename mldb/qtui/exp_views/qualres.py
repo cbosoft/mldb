@@ -14,6 +14,8 @@ class ExpQualresView(BaseExpView):
             )
             expids = expids[:1]
         super().__init__(*expids)
+
+        self.plotids_and_qualres = None
         self.expid = expids[0]
         self.layout = QHBoxLayout(self)
         self.tabs = QTabWidget()
@@ -24,8 +26,17 @@ class ExpQualresView(BaseExpView):
         DBExpQualResults(self.expid, self.qualres_returned).start()
 
     def qualres_returned(self, plotids_and_qualres):
+        self.replot(plotids_and_qualres)
+
+    def replot(self, plotids_and_qualres=None):
+        if plotids_and_qualres is not None:
+            self.plotids_and_qualres = plotids_and_qualres
+        else:
+            plotids_and_qualres = self.plotids_and_qualres
+
         for plotid, data in plotids_and_qualres:
             pw = PlotWidget()
+            pw.plotid = plotid
             self.tabs.addTab(pw, plotid)
             self.plot_qualres(pw, **data)
             pw.redraw_and_flush()
@@ -33,6 +44,28 @@ class ExpQualresView(BaseExpView):
     def plot_qualres(self, plotwidget: PlotWidget, *, kind: str, **data):
         if kind == "vector":
             self.plot_vector(plotwidget, **data)
+        elif kind == "guess":
+            if isinstance(data["data"][0]["output"], float):
+                self.plot_scalar(plotwidget, **data)
+            elif len(data["data"][0]["output"]) > 1:
+                self.plot_vector(plotwidget, **data)
+            elif len(np.array(data["data"][0]["output"]).flatten()) > 1:
+                nplots = len(np.array(data["data"][0]["output"]).flatten())
+                try:
+                    plotids, tag = plotwidget.plotid.split(";")
+                    plotids = plotids.split("-")
+                    plotids = [(pid + ";" + tag) for pid in plotids]
+                    assert len(plotids) == nplots
+                except (IndexError, AssertionError, ValueError):
+                    plotids = [f"{plotwidget.plotid}{i}" for i in range(nplots)]
+                self.tabs.removeTab(self.tabs.indexOf(plotwidget))
+                for i, plotid in enumerate(plotids):
+                    pw = PlotWidget()
+                    pw.plotid = plotid
+                    self.plot_scalar(pw, indx=i, **data)
+                    self.tabs.addTab(pw, plotid)
+            else:
+                self.plot_scalar(plotwidget, **data)
         else:
             raise NotImplementedError(f'plot kind not yet supported: "{kind}"')
 
