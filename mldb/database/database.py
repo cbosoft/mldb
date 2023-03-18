@@ -279,10 +279,12 @@ class Database:
         )
 
     def get_qualitative_result(self, exp_id: str, plot_id: str):
-        self.cursor.execute(self.COMMAND_GET_QUALRESMETA, (exp_id, plot_id))
-        meta_enc = self.cursor.fetchall()
-
-        qualres = json.loads(meta_enc[0][-1])
+        try:
+            self.cursor.execute(self.COMMAND_GET_QUALRESMETA, (exp_id, plot_id))
+            meta_enc = self.cursor.fetchall()
+            qualres = json.loads(meta_enc[0][-1])
+        except IndexError:
+            qualres = dict(kind="guess")
 
         self.cursor.execute(self.COMMAND_GET_QUALRES, (exp_id, plot_id))
         data = self.cursor.fetchall()
