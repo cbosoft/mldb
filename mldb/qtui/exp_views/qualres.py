@@ -99,7 +99,7 @@ class ExpQualresView(BaseExpView):
 
         some_targets = [min(targets), max(targets)]
         plot.plot(some_targets, some_targets, "k--")
-        plot.plot(targets, outputs, "o")
+        plot.plot(targets, outputs, "o", alpha=0.3)
         plot.redraw_and_flush()
 
     @staticmethod
