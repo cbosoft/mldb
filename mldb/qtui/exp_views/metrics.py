@@ -266,7 +266,7 @@ class MetricsView(BaseExpView):
         plot_widget.axes.set_xticks(
             lbl_x,
             labels,
-            rotation=45,
+            rotation=45, ha="right", va="top"
         )
         plot_widget.axes.set_ylabel("Error")
         plot_widget.legend(loc="lower center", bbox_to_anchor=(0.5, 1.02))
