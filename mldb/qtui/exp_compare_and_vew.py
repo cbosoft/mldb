@@ -85,6 +85,8 @@ class ExpCompareAndViewDialog(QDialog):
         self.expids = expids
         self.resize(1280, 720)
 
+        self.setWindowTitle(', '.join(self.expids))
+
         self.layout = QVBoxLayout(self)
 
         self.tabs = QTabWidget()
