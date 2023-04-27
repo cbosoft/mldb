@@ -10,3 +10,7 @@ tests/*.db
 _*
 *un~
 .vscode
+
+build
+dist
+*.spec
