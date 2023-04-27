@@ -52,8 +52,9 @@ class ExportData(BaseExpView):
         DBQuery(q.format(condition=condition), self.metrics_returned).start()
     
     def get_expdetails_and_qualres_then_metrics(self):
-        self.current_expid = self.expids_to_get.pop()
-        DBExpQualResults(self.current_expid, self.qualres_returned).start()
+        if self.expids_to_get:
+            self.current_expid = self.expids_to_get.pop()
+            DBExpQualResults(self.current_expid, self.qualres_returned).start()
     
     def qualres_returned(self, plotids_and_data):
         for plotid, data in plotids_and_data:
