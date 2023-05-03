@@ -24,6 +24,7 @@ from .edit_groups import GroupEditDialog
 
 class ExperimentListWidget(QWidget):
     QUERIES = dict(
+        latest=("Recent 100", "SELECT * FROM STATUS ORDER BY EXPID DESC LIMIT 100;"),
         all=("All Experiments", "SELECT * FROM STATUS ORDER BY EXPID DESC;"),
         active=(
             "Active Experiments",
@@ -44,6 +45,8 @@ class ExperimentListWidget(QWidget):
         for k, (n, q) in self.QUERIES.items():
             self.query_selector.addItem(n, userData=q)
         self.query_selector.currentIndexChanged.connect(self.query_changed)
+
+
 
         search_box = QWidget()
         self.layout.addWidget(search_box)
