@@ -122,6 +122,7 @@ class ExpQualresView(BaseExpView):
         #  - Colour by GT/class?
 
         last_epoch = max([d["epoch"] for d in data])
+        plot.axes.set_title(f'Epoch = {last_epoch}')
         data = [d for d in data if d["epoch"] == last_epoch]
 
         for i, datum in enumerate(data):
