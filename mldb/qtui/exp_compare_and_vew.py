@@ -86,7 +86,11 @@ class ExpCompareAndViewDialog(QDialog):
         self.expids = expids
         self.resize(1280, 720)
 
-        self.setWindowTitle(', '.join(self.expids))
+        if len(self.expids) == 1:
+            title = self.expids[0]
+        else:
+            title = ', '.join(self.expids)[:50] + '...'
+        self.setWindowTitle(title)
 
         self.layout = QVBoxLayout(self)
         refresh_button = QPushButton('Refresh')
