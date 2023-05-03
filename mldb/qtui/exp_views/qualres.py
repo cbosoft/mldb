@@ -113,7 +113,7 @@ class ExpQualresView(BaseExpView):
         data: list,
     ):
         plot.axes.set_xlabel(xlabel)
-        plot.axes.set_ylabel(ylabel)
+        # plot.axes.set_ylabel(ylabel)
         plot.axes.set_xscale(xscale)
         plot.axes.set_yscale(yscale)
 
@@ -132,6 +132,11 @@ class ExpQualresView(BaseExpView):
             else:
                 x = datum["x"]
 
-            plot.plot(x, datum["output"], "-", color=colour)
+            maxest = np.max(datum['output'])
+            if 'target' in datum:
+                tgt_max = np.max(datum['target'])
+                maxest = max(maxest, tgt_max)
+
+            plot.plot(x, datum["output"]/maxest + i*1.05, "-", color=colour)
             if "target" in datum:
-                plot.plot(x, datum["target"], "--", color=colour)
+                plot.plot(x, datum["target"]/maxest + i*1.05, "--", color=colour)
