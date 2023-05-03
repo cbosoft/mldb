@@ -48,6 +48,9 @@ class ExperimentListWidget(QWidget):
         search_box = QWidget()
         self.layout.addWidget(search_box)
         search_box.layout = QHBoxLayout(search_box)
+        self.refresh_button = QPushButton('Refresh')
+        self.refresh_button.clicked.connect(self.refresh)
+        search_box.layout.addWidget(self.refresh_button)
         search_text_input = QLineEdit()
         search_button = QPushButton("Search")
         search_button.clicked.connect(lambda: self.search(search_text_input.text()))
@@ -85,7 +88,9 @@ class ExperimentListWidget(QWidget):
         btn_box.layout.addWidget(self.group_button)
         self.layout.addWidget(btn_box)
         self.view_button.clicked.connect(self.view_or_compare_exp)
+        self.refresh()
 
+    def refresh(self):
         self.query_changed(0)
         self.exp_selection_changed()
 

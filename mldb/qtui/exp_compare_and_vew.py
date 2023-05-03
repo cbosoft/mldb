@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QHeaderView,
+    QPushButton,
 )
 
 from .plot_widget import PlotWidget
@@ -88,12 +89,27 @@ class ExpCompareAndViewDialog(QDialog):
         self.setWindowTitle(', '.join(self.expids))
 
         self.layout = QVBoxLayout(self)
+        refresh_button = QPushButton('Refresh')
+        refresh_button.clicked.connect(self.refresh)
+        self.layout.addWidget(refresh_button)
 
         self.tabs = QTabWidget()
         self.layout.addWidget(self.tabs)
 
-        self.tabs.addTab(ExpConfigView(*expids), "Config")
-        self.tabs.addTab(ExpLossAndLRView(*expids), "Loss v Epoch")
-        self.tabs.addTab(MetricsView(*expids), "Metrics")
-        self.tabs.addTab(ExpQualresView(*expids), "QualRes")
-        self.tabs.addTab(ExportData(*expids), "Export")
+        self.views = {
+            "Config": ExpConfigView(*expids),
+            "Loss Curve": ExpLossAndLRView(*expids),
+            "Metrics": MetricsView(*expids),
+            "Qualitative Results": ExpQualresView(*expids),
+            "Export": ExportData(*expids),
+        }
+
+        for tabname, widget in self.views.items():
+            self.tabs.addTab(widget, tabname)
+    
+    def refresh(self):
+        for view in self.views.values():
+            try:
+                view.refresh()
+            except Exception as e:
+                print(view, e)
